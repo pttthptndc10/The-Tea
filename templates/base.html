@@ -230,6 +230,21 @@
 
     <!-- Global JS -->
     <script>
+        // Global Modal Helpers
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
         // Sidebar Toggle for Mobile
         const sidebar = document.getElementById('sidebar');
         const openBtn = document.getElementById('openSidebarMobile');
