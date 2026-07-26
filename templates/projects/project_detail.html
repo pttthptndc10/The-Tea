@@ -255,7 +255,7 @@
                             <span class="text-slate-400 font-semibold">Chỉ định:</span>
                             <span class="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded">
                                 {% for a in t.assignees.all %}
-                                    {{ a.user.full_name|default:a.user.email }}{% if not forloop.last %}, {% endif %}
+                                    {% if a.user %}{{ a.user.full_name|default:a.user.email }}{% endif %}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
                                     Chưa giao
                                 {% endfor %}
@@ -434,8 +434,8 @@
             <h3 class="font-bold text-slate-800 uppercase tracking-wider text-xs">Thông Tin Chi Tiết Dự Án</h3>
             <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
                 <p><strong>Tên dự án:</strong> {{ project.name }}</p>
-                <p><strong>Người tạo:</strong> {{ project.created_by.full_name|default:project.created_by.email }}</p>
-                <p><strong>Người quản lý:</strong> {{ project.manager.full_name|default:project.manager.email|default:"Chưa chỉ định" }}</p>
+                <p><strong>Người tạo:</strong> {% if project.created_by %}{{ project.created_by.full_name|default:project.created_by.email }}{% else %}Deleted User{% endif %}</p>
+                <p><strong>Người quản lý:</strong> {% if project.manager %}{{ project.manager.full_name|default:project.manager.email }}{% else %}<span class="text-rose-600 font-semibold">Chưa chỉ định (Deleted User)</span>{% endif %}</p>
                 <p><strong>Thời gian:</strong> {{ project.start_date|date:"d/m/Y" }} đến {{ project.end_date|date:"d/m/Y" }}</p>
                 <p><strong>Mô tả:</strong> {{ project.description|default:"Chưa có mô tả." }}</p>
             </div>

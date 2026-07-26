@@ -82,7 +82,7 @@
                             </a>
                         </td>
                         <td class="py-3 px-4 text-slate-600">
-                            {{ sp.project.manager.full_name|default:sp.project.manager.email|default:"Chưa có" }}
+                            {% if sp.project.manager %}{{ sp.project.manager.full_name|default:sp.project.manager.email }}{% else %}Chưa có{% endif %}
                         </td>
                         <td class="py-3 px-4 text-center font-bold text-slate-800">
                             {{ sp.project.components.count }}
