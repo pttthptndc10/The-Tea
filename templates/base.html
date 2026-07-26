@@ -126,10 +126,16 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <!-- Header Bar -->
             <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                     <button id="openSidebarMobile" class="md:hidden text-slate-600 hover:text-slate-900 p-2">
                         <i class="fa-solid fa-bars text-lg"></i>
                     </button>
+                    <!-- Global Back Arrow Button -->
+                    <button type="button" onclick="window.history.back()" class="px-3 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-xl border border-slate-200/80 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Quay lại trang trước">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                        <span>Quay lại</span>
+                    </button>
+                    <span class="text-slate-300">|</span>
                     <h1 class="text-lg font-bold text-slate-800">{% block page_title %}Tổng Quan{% endblock %}</h1>
                 </div>
 
