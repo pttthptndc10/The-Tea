@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Thành Viên - The Tea{% endblock %}
+{% block page_title %}Quản Lý Thành Viên & Phân Quyền{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Danh Sách Thành Viên Nội Bộ</h2>
+            <p class="text-sm text-slate-500">Quản lý tài khoản, gửi lời mời đăng ký và phân quyền hệ thống.</p>
+        </div>
+        <button onclick="openModal('inviteModal')" class="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition text-sm">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Mời Thành Viên Mới</span>
+        </button>
+    </div>
+
+    <!-- Active Members Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-users text-brand-600"></i>
+                <span>Tài Khoản Hiện Có ({{ members|length }})</span>
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-200">
+                        <th class="py-3.5 px-6">Thành viên</th>
+                        <th class="py-3.5 px-6">Email</th>
+                        <th class="py-3.5 px-6">Vai trò (Role)</th>
+                        <th class="py-3.5 px-6">Trạng thái</th>
+                        <th class="py-3.5 px-6">Ngày gia nhập</th>
+                        <th class="py-3.5 px-6 text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+                    {% for m in members %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-4 px-6 font-semibold text-slate-900 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">
+                                {{ m.email|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <span>{{ m.full_name|default:m.email }}</span>
+                                {% if m == request.user %}
+                                <span class="ml-2 text-[10px] bg-brand-100 text-brand-800 px-2 py-0.5 rounded font-bold">Bạn</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 font-mono text-xs text-slate-600">{{ m.email }}</td>
+                        <td class="py-4 px-6">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                                {% if m.role == 'ADMIN' %}bg-purple-100 text-purple-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                                <i class="fa-solid {% if m.role == 'ADMIN' %}fa-user-shield{% else %}fa-user{% endif %}"></i>
+                                {{ m.get_role_display }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">
+                            {% if m.status == 'ACTIVE' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang hoạt động
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Đã khóa
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6 text-xs text-slate-500">{{ m.created_at|date:"d/m/Y H:i" }}</td>
+                        <td class="py-4 px-6 text-right space-x-1">
+                            {% if m != request.user %}
+                            <!-- Lock / Unlock button -->
+                            <button onclick="confirmAction('toggleModal', '{% url 'accounts:toggle_user_status' m.id %}', 'xác nhận {% if m.status == 'ACTIVE' %}KHÓA{% else %}MỞ KHÓA{% endif %} tài khoản {{ m.email }}')" 
+                                class="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Khóa/Mở khóa">
+                                <i class="fa-solid {% if m.status == 'ACTIVE' %}fa-lock{% else %}fa-lock-open{% endif %}"></i>
+                            </button>
+
+                            <!-- Change Role button -->
+                            <button onclick="openRoleModal('{{ m.id }}', '{{ m.email }}', '{{ m.role }}')" 
+                                class="p-2 text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition" title="Đổi Role">
+                                <i class="fa-solid fa-user-gear"></i>
+                            </button>
+
+                            <!-- Transfer Admin Rights button -->
+                            {% if m.role != 'ADMIN' %}
+                            <button onclick="confirmAction('toggleModal', '{% url 'accounts:transfer_admin' m.id %}', 'chuyển toàn bộ quyền ADMIN cho {{ m.email }}? (Bạn sẽ trở thành Member)')" 
+                                class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Chuyển quyền Admin">
+                                <i class="fa-solid fa-crown"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- Delete button -->
+                            <button onclick="confirmAction('toggleModal', '{% url 'accounts:delete_user' m.id %}', 'XÓA HOÀN TOÀN tài khoản {{ m.email }} khỏi hệ thống')" 
+                                class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Xóa tài khoản">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Invitations Table -->
+    {% if invitations %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-amber-50/50 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+                <span>Lời Mời Đang Chờ Đăng Ký ({{ invitations|length }})</span>
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-6">Email Được Mời</th>
+                        <th class="py-3 px-6">Người Mời</th>
+                        <th class="py-3 px-6">Thời Gian Gửi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+                    {% for inv in invitations %}
+                    <tr>
+                        <td class="py-3 px-6 font-mono text-xs font-semibold text-slate-800">{{ inv.email }}</td>
+                        <td class="py-3 px-6 text-xs text-slate-600">{{ inv.invited_by.email }}</td>
+                        <td class="py-3 px-6 text-xs text-slate-500">{{ inv.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODALS -->
+
+<!-- Modal 1: Invite Member Modal -->
+<div id="inviteModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane text-brand-600"></i>
+                <span>Mời Thành Viên Mới</span>
+            </h3>
+            <button onclick="closeModal('inviteModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form method="POST" action="{% url 'accounts:invite_member' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Email Thành Viên</label>
+                {{ invite_form.email }}
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('inviteModal')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-xl shadow">Gửi Lời Mời</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Generic Confirmation Modal (For Lock/Unlock, Delete, Transfer Admin) -->
+<div id="toggleModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center gap-3 text-amber-600">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Xác Nhận Thao Tác</h3>
+        </div>
+        <p id="confirmMessage" class="text-sm text-slate-600">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+        <form id="confirmForm" method="POST" action="" class="flex justify-end gap-3 pt-3">
+            {% csrf_token %}
+            <button type="button" onclick="closeModal('toggleModal')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 rounded-xl shadow">Xác Nhận</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 3: Change Role Modal -->
+<div id="roleModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-user-gear text-purple-600"></i>
+                <span>Thay Đổi Vai Trò</span>
+            </h3>
+            <button onclick="closeModal('roleModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p id="roleUserEmail" class="text-xs text-slate-500 font-mono"></p>
+        <form id="roleForm" method="POST" action="" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Chọn Vai Trò Mới</label>
+                <select name="role" id="roleSelect" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500">
+                    <option value="MEMBER">Member (Thành viên)</option>
+                    <option value="ADMIN">Admin (Quản trị viên)</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-purple-600 text-white hover:bg-purple-700 rounded-xl shadow">Cập Nhật Role</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    function confirmAction(modalId, actionUrl, message) {
+        document.getElementById('confirmMessage').innerText = "Bạn có chắc chắn muốn " + message + "?";
+        document.getElementById('confirmForm').action = actionUrl;
+        openModal(modalId);
+    }
+    function openRoleModal(userId, userEmail, currentRole) {
+        document.getElementById('roleUserEmail').innerText = "Thành viên: " + userEmail;
+        document.getElementById('roleForm').action = "/accounts/members/" + userId + "/change-role/";
+        document.getElementById('roleSelect').value = currentRole;
+        openModal('roleModal');
+    }
+</script>
+{% endblock %}

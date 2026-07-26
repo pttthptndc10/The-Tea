@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Linh Kiện - The Tea{% endblock %}
+{% block page_title %}Quản Lý Linh Kiện & Vật Tư{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Quản Lý Linh Kiện & Chi Phí</h2>
+            <p class="text-sm text-slate-500">Bảng tính tự động, hỗ trợ Auto Save sau 1s và xuất báo cáo Excel.</p>
+        </div>
+        {% if selected_project %}
+        <a href="{% url 'components:export_excel' selected_project.id %}" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition text-sm">
+            <i class="fa-solid fa-file-excel text-base"></i>
+            <span>Xuất Excel (.xlsx)</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Select Project Filter -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center gap-4 flex-wrap">
+        <span class="text-sm font-semibold text-slate-700">Chọn Dự Án:</span>
+        <form method="GET" action="{% url 'components:list' %}" class="flex items-center gap-2">
+            <select name="project" onchange="this.form.submit()" class="px-4 py-2 rounded-xl border border-slate-200 text-sm bg-white font-medium focus:ring-2 focus:ring-brand-500">
+                {% for p in projects %}
+                <option value="{{ p.id }}" {% if selected_project and selected_project.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Components Table Card with Auto-Save -->
+    {% if selected_project %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+        
+        <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">Bảng Linh Kiện - {{ selected_project.name }}</h3>
+                <p class="text-xs text-slate-400" id="autoSaveIndicator"><i class="fa-solid fa-cloud-arrow-up text-brand-600 mr-1"></i> Tự động lưu sau 1s khi thay đổi dữ liệu</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tổng Tiền Linh Kiện</p>
+                <p class="text-xl font-bold text-brand-700" id="projectTotalDisplay">{{ total_cost|floatformat:0 }} VNĐ</p>
+            </div>
+        </div>
+
+        <!-- Add Component Form -->
+        <form method="POST" action="{% url 'components:create' selected_project.id %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            {% csrf_token %}
+            <div class="lg:col-span-2">
+                <input type="text" name="name" required placeholder="Tên linh kiện *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+                <input type="number" name="quantity" min="1" value="1" placeholder="Số lượng *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+                <input type="number" name="unit_price" min="0" step="1000" placeholder="Đơn giá (VNĐ) *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+                <input type="text" name="shop" placeholder="Shop / Nơi mua" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+                <button type="submit" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg shadow transition">
+                    + Thêm dòng
+                </button>
+            </div>
+        </form>
+
+        <!-- Components List Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs text-slate-700">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">STT</th>
+                        <th class="py-3 px-4">Tên Linh Kiện</th>
+                        <th class="py-3 px-4 w-24 text-center">Số Lượng</th>
+                        <th class="py-3 px-4 w-36 text-right">Đơn Giá (VNĐ)</th>
+                        <th class="py-3 px-4 w-40 text-right">Thành Tiền (VNĐ)</th>
+                        <th class="py-3 px-4">Shop / Nơi Mua</th>
+                        <th class="py-3 px-4">Ghi Chú</th>
+                        <th class="py-3 px-4 w-16 text-center">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium">
+                    {% for c in components %}
+                    <tr class="hover:bg-slate-50/80 transition" data-id="{{ c.id }}">
+                        <td class="py-3 px-4 text-center font-bold text-slate-400">{{ forloop.counter }}</td>
+                        <td class="py-2 px-3">
+                            <input type="text" value="{{ c.name }}" class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none transition font-semibold text-slate-900 auto-save-input" data-field="name">
+                        </td>
+                        <td class="py-2 px-3 text-center">
+                            <input type="number" min="1" value="{{ c.quantity }}" class="w-20 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-center font-bold text-slate-800 auto-save-input" data-field="quantity">
+                        </td>
+                        <td class="py-2 px-3 text-right">
+                            <input type="number" min="0" step="1000" value="{{ c.unit_price|floatformat:0 }}" class="w-32 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-right font-mono font-semibold text-slate-800 auto-save-input" data-field="unit_price">
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono font-bold text-brand-700 total-price-cell">
+                            {{ c.total_price|floatformat:0 }}
+                        </td>
+                        <td class="py-2 px-3">
+                            <input type="text" value="{{ c.shop }}" placeholder="Nhập shop..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 auto-save-input" data-field="shop">
+                        </td>
+                        <td class="py-2 px-3">
+                            <input type="text" value="{{ c.notes }}" placeholder="Ghi chú..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 auto-save-input" data-field="notes">
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <form method="POST" action="{% url 'components:delete' c.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Xóa linh kiện {{ c.name }}?')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Xóa">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-400 italic">Dự án này chưa có linh kiện nào. Hãy nhập thông tin phía trên để thêm mới.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- AUTO SAVE DEBOUNCE SCRIPT (~1s) -->
+<script>
+    let saveTimeout = null;
+
+    document.querySelectorAll('.auto-save-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const row = this.closest('tr');
+            const componentId = row.getAttribute('data-id');
+            const indicator = document.getElementById('autoSaveIndicator');
+
+            if (indicator) {
+                indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-500 mr-1"></i> Đang nhập...';
+            }
+
+            clearTimeout(saveTimeout);
+
+            saveTimeout = setTimeout(() => {
+                const name = row.querySelector('[data-field="name"]').value;
+                const quantity = row.querySelector('[data-field="quantity"]').value;
+                const unit_price = row.querySelector('[data-field="unit_price"]').value;
+                const shop = row.querySelector('[data-field="shop"]').value;
+                const notes = row.querySelector('[data-field="notes"]').value;
+
+                fetch("{% url 'components:auto_save_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        id: componentId,
+                        name: name,
+                        quantity: quantity,
+                        unit_price: unit_price,
+                        shop: shop,
+                        notes: notes
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (indicator) {
+                            indicator.innerHTML = '<i class="fa-solid fa-check text-emerald-500 mr-1"></i> Đã tự động lưu lúc ' + new Date().toLocaleTimeString();
+                        }
+                        row.querySelector('.total-price-cell').innerText = data.total_price.toLocaleString('vi-VN');
+                        const totalDisplay = document.getElementById('projectTotalDisplay');
+                        if (totalDisplay) {
+                            totalDisplay.innerText = data.project_total.toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                    }
+                })
+                .catch(err => {
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi tự động lưu';
+                    }
+                });
+            }, 1000); // 1000ms = 1 second debounce
+        });
+    });
+</script>
+{% endblock %}

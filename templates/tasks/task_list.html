@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Nhiệm Vụ - The Tea{% endblock %}
+{% block page_title %}Quản Lý Nhiệm Vụ (Task){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Danh Sách Công Việc</h2>
+            <p class="text-sm text-slate-500">Phân công nhiệm vụ, cập nhật tiến độ và theo dõi trạng thái công việc.</p>
+        </div>
+        <a href="{% url 'tasks:create' %}" class="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition text-sm">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tạo Nhiệm Vụ Mới</span>
+        </a>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <!-- Status Tabs -->
+        <div class="flex items-center gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+            <a href="{% url 'tasks:list' %}" 
+               class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition {% if current_status == 'ALL' %}bg-brand-600 text-white shadow-sm{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200{% endif %}">
+                Tất cả
+            </a>
+            <a href="{% url 'tasks:list' %}?status=TODO" 
+               class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition {% if current_status == 'TODO' %}bg-brand-600 text-white shadow-sm{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200{% endif %}">
+                Chưa thực hiện
+            </a>
+            <a href="{% url 'tasks:list' %}?status=IN_PROGRESS" 
+               class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition {% if current_status == 'IN_PROGRESS' %}bg-brand-600 text-white shadow-sm{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200{% endif %}">
+                Đang thực hiện
+            </a>
+            <a href="{% url 'tasks:list' %}?status=COMPLETED" 
+               class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition {% if current_status == 'COMPLETED' %}bg-brand-600 text-white shadow-sm{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200{% endif %}">
+                Hoàn thành
+            </a>
+            <a href="{% url 'tasks:list' %}?status=CANCELLED" 
+               class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition {% if current_status == 'CANCELLED' %}bg-slate-800 text-white shadow-sm{% else %}bg-white text-slate-700 hover:bg-slate-100 border border-slate-200{% endif %}">
+                🚫 Đã Hủy
+            </a>
+        </div>
+
+        <!-- Project Filter & Search -->
+        <div class="flex items-center gap-2">
+            <form method="GET" action="{% url 'tasks:list' %}" class="flex items-center gap-2">
+                <input type="hidden" name="status" value="{{ current_status }}">
+                <select name="project" onchange="this.form.submit()" class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">-- Tất cả Dự án --</option>
+                    {% for proj in projects %}
+                    <option value="{{ proj.id }}" {% if current_project_id == proj.id|stringformat:"s" %}selected{% endif %}>{{ proj.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="relative w-48">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ query }}" placeholder="Tìm task..." 
+                        class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tasks Grid -->
+    {% if tasks %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for t in tasks %}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-brand-500 transition flex flex-col justify-between overflow-hidden group">
+            
+            <div class="p-6 space-y-4">
+                <!-- Header: Badges & Project -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider
+                            {% if t.status == 'COMPLETED' %}bg-emerald-100 text-emerald-800
+                            {% elif t.status == 'IN_PROGRESS' %}bg-amber-100 text-amber-800
+                            {% elif t.status == 'CANCELLED' %}bg-slate-200 text-slate-700
+                            {% else %}bg-sky-100 text-sky-800{% endif %}">
+                            {{ t.get_status_display }}
+                        </span>
+
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-medium
+                            {% if t.priority == 'URGENT' %}bg-rose-100 text-rose-800 font-bold
+                            {% elif t.priority == 'HIGH' %}bg-orange-100 text-orange-800
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            <i class="fa-solid fa-flag text-[10px] mr-1"></i>{{ t.get_priority_display }}
+                        </span>
+                    </div>
+
+                    <!-- Project Badge Link -->
+                    <a href="{% url 'projects:detail' t.project.id %}" class="inline-block text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded hover:underline">
+                        <i class="fa-solid fa-folder-tree mr-1"></i>{{ t.project.name }}
+                    </a>
+
+                    <!-- Title -->
+                    <h3 class="text-base font-bold text-slate-900 line-clamp-1 group-hover:text-brand-600 transition">
+                        <a href="{% url 'tasks:detail' t.id %}">{{ t.title }}</a>
+                    </h3>
+                </div>
+
+                <!-- Notes -->
+                <p class="text-xs text-slate-500 line-clamp-2 min-h-[32px]">
+                    {{ t.notes|default:"Chưa có ghi chú." }}
+                </p>
+
+                <!-- Assignees List -->
+                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                    <span class="text-slate-400 font-medium">Người thực hiện:</span>
+                    <div class="flex -space-x-2 overflow-hidden">
+                        {% for a in t.assignees.all %}
+                        <div class="w-6 h-6 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center text-[10px] border-2 border-white" title="{{ a.user.full_name|default:a.user.email }}">
+                            {{ a.user.email|slice:":1"|upper }}
+                        </div>
+                        {% empty %}
+                        <span class="text-slate-400 italic text-[11px]">Chưa giao</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer: Dates & Quick Action -->
+            <div class="px-6 py-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <div class="flex items-center gap-1 font-mono text-[11px]">
+                    <i class="fa-regular fa-calendar text-slate-400"></i>
+                    <span>{{ t.end_date|date:"d/m/Y" }}</span>
+                </div>
+                <a href="{% url 'tasks:detail' t.id %}" class="text-brand-600 hover:underline font-semibold">
+                    Chi tiết <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </a>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
+        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 text-2xl mx-auto">
+            <i class="fa-solid fa-list-check"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800">Không tìm thấy công việc nào</h3>
+        <p class="text-sm text-slate-500">Thử chọn dự án hoặc trạng thái khác.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - The Tea{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        
+        <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">{{ title }}</h2>
+                <p class="text-sm text-slate-500">
+                    {% if is_create %}
+                    Điền đầy đủ thông tin để khởi tạo dự án mới cho hệ thống.
+                    {% else %}
+                    Cập nhật thông tin dự án "{{ project.name }}".
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% if is_create %}{% url 'projects:list' %}{% else %}{% url 'projects:detail' project.id %}{% endif %}" 
+               class="text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </a>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Tên Dự Án <span class="text-rose-500">*</span></label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <p class="text-xs text-rose-600 mt-1">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Mô Tả Dự Án</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <p class="text-xs text-rose-600 mt-1">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Người Quản Lý (Manager)</label>
+                    {{ form.manager }}
+                    {% if form.manager.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.manager.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Độ Ưu Tiên</label>
+                    {{ form.priority }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Ngày Bắt Đầu <span class="text-rose-500">*</span></label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.start_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Ngày Kết Thúc <span class="text-rose-500">*</span></label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.end_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Trạng Thái Dự Án</label>
+                {{ form.status }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Thành Viên Tham Gia (Giữ Ctrl/Cmd để chọn nhiều)</label>
+                {{ form.members }}
+                <p class="text-[11px] text-slate-400 mt-1">Các thành viên được chọn sẽ có quyền xem và thao tác trên dự án này.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="{% if is_create %}{% url 'projects:list' %}{% else %}{% url 'projects:detail' project.id %}{% endif %}" 
+                   class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                    Hủy
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-600/30 transition">
+                    {% if is_create %}Tạo Dự Án{% else %}Lưu Thay Đổi{% endif %}
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

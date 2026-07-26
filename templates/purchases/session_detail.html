@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ session.name }} - The Tea{% endblock %}
+{% block page_title %}Chi Tiết Phiên Mua Sắm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-xl font-bold text-slate-900">{{ session.name }}</h2>
+                    {% if session.status == 'OPEN' %}
+                    <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider">
+                        🟢 Đang mở
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                        🔒 Đã đóng
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Tạo bởi: {{ session.created_by.full_name|default:session.created_by.email }} • Ngày tạo: {{ session.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center gap-3">
+                <form method="POST" action="{% url 'purchases:toggle_status' session.id %}" class="inline">
+                    {% csrf_token %}
+                    {% if session.status == 'OPEN' %}
+                    <button type="submit" onclick="return confirm('Đóng phiên mua sắm này?')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow transition">
+                        <i class="fa-solid fa-lock mr-1"></i> Đóng phiên
+                    </button>
+                    {% else %}
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">
+                        <i class="fa-solid fa-lock-open mr-1"></i> Mở lại phiên
+                    </button>
+                    {% endif %}
+                </form>
+
+                <button onclick="openModal('editSessionModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> Cập nhật danh sách dự án
+                </button>
+            </div>
+        </div>
+
+        <!-- Total Cost Highlight -->
+        <div class="p-4 bg-brand-50 rounded-xl border border-brand-100 flex items-center justify-between">
+            <span class="text-xs font-bold uppercase text-brand-900 tracking-wider">Tổng Kinh Phí Mua Sắm Phiên Này</span>
+            <span class="text-2xl font-extrabold text-brand-700 font-mono">{{ total_amount|floatformat:0 }} VNĐ</span>
+        </div>
+    </div>
+
+    <!-- Linked Projects & Component Breakdowns Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+            <i class="fa-solid fa-folder-tree text-brand-600"></i>
+            <span>Các Dự Án Tham Gia Phiên Mua Sắm ({{ session_projects|length }})</span>
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs text-slate-700">
+                <thead>
+                    <tr class="bg-slate-100/70 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-4 w-12 text-center">STT</th>
+                        <th class="py-3 px-4">Tên Dự Án</th>
+                        <th class="py-3 px-4">Người Quản Lý</th>
+                        <th class="py-3 px-4 text-center">Số Linh Kiện</th>
+                        <th class="py-3 px-4 text-right">Tổng Chi Phí (VNĐ)</th>
+                        <th class="py-3 px-4 text-center">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium">
+                    {% for sp in session_projects %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 text-center font-bold text-slate-400">{{ forloop.counter }}</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">
+                            <a href="{% url 'projects:detail' sp.project.id %}" class="hover:text-brand-600 transition">
+                                {{ sp.project.name }}
+                            </a>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600">
+                            {{ sp.project.manager.full_name|default:sp.project.manager.email|default:"Chưa có" }}
+                        </td>
+                        <td class="py-3 px-4 text-center font-bold text-slate-800">
+                            {{ sp.project.components.count }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono font-bold text-brand-700">
+                            {{ sp.snapshot_amount|floatformat:0 }} VNĐ
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <a href="{% url 'projects:detail' sp.project.id %}?tab=materials" class="px-3 py-1 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg text-xs font-semibold transition">
+                                Xem linh kiện
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 italic">Phiên này chưa chọn dự án nào.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Edit Session Modal -->
+<div id="editSessionModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-brand-600"></i>
+                <span>Cập Nhật Phiên Mua Sắm</span>
+            </h3>
+            <button onclick="closeModal('editSessionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form method="POST" action="{% url 'purchases:edit' session.id %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Tên phiên mua sắm *</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Trạng thái</label>
+                {{ form.status }}
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Chọn Dự Án tham gia (Giữ Ctrl để chọn nhiều)</label>
+                {{ form.projects }}
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('editSessionModal')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-xl shadow">Lưu Thay Đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+</script>
+{% endblock %}

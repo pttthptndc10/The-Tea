@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo & Thống Kê - The Tea{% endblock %}
+{% block page_title %}Báo Cáo Tiến Độ & Kinh Phí{% endblock %}
+
+{% block content %}
+<!-- Include Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="space-y-6">
+
+    <!-- Top Summary Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
+            <p class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tổng Số Dự Án</p>
+            <p class="text-2xl font-extrabold text-slate-900">{{ total_projects }}</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
+            <p class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Nhiệm Vụ Hoàn Thành</p>
+            <p class="text-2xl font-extrabold text-emerald-600">{{ completed_tasks_count }} <span class="text-xs font-normal text-slate-400">/ {{ total_tasks }}</span></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
+            <p class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Phiên Mua Sắm (Mở/Đóng)</p>
+            <p class="text-2xl font-extrabold text-brand-600">{{ open_sessions_count }} <span class="text-xs font-normal text-slate-400">mở / {{ closed_sessions_count }} đóng</span></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
+            <p class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Tổng Ngân Sách Mua Sắm</p>
+            <p class="text-xl font-extrabold text-brand-700 font-mono">{{ total_purchase_cost|floatformat:0 }} VNĐ</p>
+        </div>
+    </div>
+
+    <!-- Charts Row: Project Progress & User Progress -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 1. Project Progress Chart -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-brand-600"></i>
+                <span>Biểu Đồ Tiến Độ Các Dự Án (%)</span>
+            </h3>
+            <div class="h-64 relative">
+                <canvas id="projectProgressChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. User Progress / Contribution Chart -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-user-check text-brand-600"></i>
+                <span>Biểu Đồ Tiến Độ & Đóng Góp Thành Viên</span>
+            </h3>
+            <div class="h-64 relative">
+                <canvas id="userProgressChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Dedicated Purchase Session Summary Area -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-cart-shopping text-brand-600"></i>
+                <span>Khu Vực Quản Lý Phiên Mua Sắm (Purchase Session Area)</span>
+            </h3>
+            <a href="{% url 'purchases:list' %}" class="text-xs font-bold text-brand-600 hover:underline flex items-center gap-1">
+                Xem tất cả phiên <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for s in purchase_sessions|slice:":3" %}
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-900 truncate">{{ s.name }}</span>
+                    {% if s.status == 'OPEN' %}
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-bold">MỞ</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">ĐÓNG</span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-500">{{ s.session_projects.count }} dự án tham gia</p>
+                <p class="text-sm font-bold text-brand-700 font-mono">{{ s.get_total_amount|floatformat:0 }} VNĐ</p>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-6 text-xs text-slate-400">
+                Chưa có dữ liệu phiên mua sắm.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js Initialization Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Project Progress Bar Chart
+        const projectCtx = document.getElementById('projectProgressChart').getContext('2d');
+        new Chart(projectCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ project_labels|safe }},
+                datasets: [{
+                    label: 'Tiến độ (%)',
+                    data: {{ project_progress_data|safe }},
+                    backgroundColor: 'rgba(22, 163, 74, 0.75)',
+                    borderColor: 'rgb(22, 163, 74)',
+                    borderWidth: 1.5,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: value => value + '%' }
+                    }
+                }
+            }
+        });
+
+        // User Progress Grouped Bar Chart
+        const userCtx = document.getElementById('userProgressChart').getContext('2d');
+        new Chart(userCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ user_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Nhiệm vụ Hoàn thành',
+                        data: {{ user_completed_tasks|safe }},
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Tổng Nhiệm vụ Được giao',
+                        data: {{ user_total_tasks|safe }},
+                        backgroundColor: 'rgba(203, 213, 225, 0.8)',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.name }} - The Tea{% endblock %}
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Unmanaged Project Warning Banner -->
+    {% if project.is_unmanaged %}
+    <div class="p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3 text-rose-800">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl text-rose-600 flex-shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm">DỰ ÁN KHÔNG CÒN NGƯỜI QUẢN LÝ (Deleted User)</h4>
+                <p class="text-xs text-rose-700">Dự án hiện đang ở chế độ <strong>CHỈ XEM (View Only)</strong>. Admin cần chỉ định Người quản lý mới để kích hoạt quyền chỉnh sửa.</p>
+            </div>
+        </div>
+        {% if user.role == 'ADMIN' or user.is_staff %}
+        <button onclick="openModal('assignModal')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow transition flex-shrink-0">
+            <i class="fa-solid fa-user-plus mr-1"></i> Chỉ Định Manager Mới
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Top Overview Header Bar (Like Spec Image) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Badges & Due Date -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                    {% if project.status == 'COMPLETED' %}bg-emerald-100 text-emerald-800
+                    {% elif project.status == 'IN_PROGRESS' %}bg-brand-600 text-white
+                    {% elif project.status == 'CANCELLED' %}bg-slate-200 text-slate-700
+                    {% elif project.status == 'ON_HOLD' %}bg-purple-100 text-purple-800
+                    {% else %}bg-sky-100 text-sky-800{% endif %}">
+                    {{ project.get_status_display }}
+                </span>
+
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <i class="fa-solid fa-flag text-xs mr-1 text-brand-600"></i>{{ project.get_priority_display }}
+                </span>
+
+                <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full border border-slate-100 font-mono">
+                    <i class="fa-regular fa-calendar-days text-slate-400"></i>
+                    Hạn: {{ project.end_date|date:"d/m/Y" }}
+                </span>
+            </div>
+
+            <!-- Member Count & Actions -->
+            <div class="flex items-center gap-4 text-xs font-medium text-slate-600">
+                <span><i class="fa-solid fa-users text-brand-600 mr-1"></i> {{ members|length }} thành viên</span>
+                {% if can_edit %}
+                <a href="{% url 'projects:edit' project.id %}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition font-semibold">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        {% with progress=project.get_progress_percentage %}
+        <div class="space-y-1.5 pt-1">
+            <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-slate-500 uppercase tracking-wider text-[11px]">Tiến độ dự án</span>
+                <span class="text-brand-700 font-bold text-sm">{{ progress }}%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ progress }}%;"></div>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+
+    <!-- Tabbed Navigation Bar -->
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto scrollbar-none">
+        <button onclick="switchTab('checklist')" id="tabBtn-checklist"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow">
+            <i class="fa-solid fa-square-check"></i>
+            <span>Checklist (Nhiệm vụ)</span>
+        </button>
+        
+        <button onclick="switchTab('materials')" id="tabBtn-materials"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+            <i class="fa-solid fa-microchip"></i>
+            <span>Linh kiện</span>
+        </button>
+
+        <button onclick="switchTab('members')" id="tabBtn-members"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+            <i class="fa-solid fa-users"></i>
+            <span>Thành viên</span>
+        </button>
+
+        <button onclick="switchTab('info')" id="tabBtn-info"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Thông tin</span>
+        </button>
+    </div>
+
+    <!-- TAB 1: CHECKLIST (TASK LIST LAYOUT LIKE SPEC IMAGE) -->
+    <div id="tabContent-checklist" class="space-y-6">
+        
+        <!-- Checklist Header & Add Task Button -->
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+                <span>Cần làm & Đang thực hiện ({{ todo_tasks|length|add:in_progress_tasks|length }})</span>
+            </h3>
+
+            {% if can_edit %}
+            <button type="button" onclick="toggleInlineTaskForm()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow transition cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Thêm công việc
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Task Checklist Cards List -->
+        <div id="taskChecklistList" class="space-y-4">
+            
+            {% if can_edit %}
+            <!-- INLINE NEW TASK TEMPLATE CARD -->
+            <form id="inlineTaskFormCard" method="POST" action="{% url 'tasks:quick_create' project.id %}" class="hidden bg-brand-50/60 rounded-2xl border-2 border-brand-400 p-5 shadow-md space-y-4 transition">
+                {% csrf_token %}
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-600 text-white">
+                            {{ project.name|truncatechars:15 }}
+                        </span>
+                        <input type="text" name="title" required placeholder="Nhập tên công việc mới..." 
+                            class="flex-1 px-3 py-1.5 rounded-xl border border-brand-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="submit" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow transition">
+                            <i class="fa-solid fa-check mr-1"></i> Lưu công việc
+                        </button>
+                        <button type="button" onclick="toggleInlineTaskForm()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition">
+                            Hủy
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notes Inline -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-500">Ghi chú công việc:</label>
+                    <textarea name="notes" placeholder="Ghi chú thêm cho công việc..." rows="2" 
+                        class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"></textarea>
+                </div>
+
+                <!-- Inline Assignee, Priority & Dates -->
+                <div class="flex items-center justify-between gap-4 text-xs text-slate-600 flex-wrap pt-2 border-t border-brand-200/50">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <!-- Assignee select -->
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-slate-500 font-semibold">Chỉ định:</span>
+                            <select name="assignees" multiple class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+                                {% for m in members %}
+                                <option value="{{ m.id }}">{{ m.full_name|default:m.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="flex items-center gap-2 font-mono">
+                            <span>Bắt đầu:</span>
+                            <input type="date" name="start_date" value="{{ project.start_date|date:'Y-m-d' }}" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
+                            <span>Kết thúc:</span>
+                            <input type="date" name="end_date" value="{{ project.end_date|date:'Y-m-d' }}" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="flex items-center gap-1.5">
+                            <span>Độ ưu tiên:</span>
+                            <select name="priority" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
+                                <option value="LOW">Thấp</option>
+                                <option value="MEDIUM" selected>Trung bình</option>
+                                <option value="HIGH">Cao</option>
+                                <option value="URGENT">Khẩn cấp</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+
+            {% for t in tasks %}
+            {% if t.status != 'CANCELLED' %}
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 hover:border-brand-300 transition">
+                <!-- Task Main Line -->
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <!-- Quick Complete Checkbox -->
+                        <form method="POST" action="{% url 'tasks:update_status' t.id %}" class="inline">
+                            {% csrf_token %}
+                            {% if t.status == 'COMPLETED' %}
+                            <input type="hidden" name="status" value="TODO">
+                            <button type="submit" class="w-5 h-5 rounded border-2 border-brand-500 bg-brand-500 text-white flex items-center justify-center text-xs" title="Đánh dấu chưa hoàn thành">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            {% else %}
+                            <input type="hidden" name="status" value="COMPLETED">
+                            <button type="submit" class="w-5 h-5 rounded border-2 border-slate-300 hover:border-brand-500 bg-white flex items-center justify-center text-xs transition" title="Đánh dấu đã hoàn thành">
+                            </button>
+                            {% endif %}
+                        </form>
+
+                        <!-- Project Name Tag + Task Title -->
+                        <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-100 text-brand-800">
+                                {{ project.name|truncatechars:20 }}
+                            </span>
+                            <a href="{% url 'tasks:detail' t.id %}" class="font-bold text-sm text-slate-900 hover:text-brand-600 transition truncate {% if t.status == 'COMPLETED' %}line-through text-slate-400{% endif %}">
+                                {{ t.title }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons Right (Hủy bỏ / Delete) -->
+                    <div class="flex items-center gap-2">
+                        {% if can_edit %}
+                        <form method="POST" action="{% url 'tasks:cancel' t.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Chuyển task sang tab Đã Hủy?')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                                Hủy bỏ
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if user.role == 'ADMIN' or project.manager == user %}
+                        <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Xóa hẳn task này?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Notes preview -->
+                <div class="text-xs text-slate-500 pl-8 space-y-1">
+                    <p class="font-semibold text-slate-400">Ghi chú công việc:</p>
+                    <p class="italic text-slate-600">{{ t.notes|default:"Chưa có ghi chú cho công việc..." }}</p>
+                </div>
+
+                <!-- Inline Details Bar (Assignee & Dates) -->
+                <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <!-- Assignee Dropdown/List -->
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-slate-400 font-semibold">Chỉ định:</span>
+                            <span class="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded">
+                                {% for a in t.assignees.all %}
+                                    {{ a.user.full_name|default:a.user.email }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    Chưa giao
+                                {% endfor %}
+                            </span>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="flex items-center gap-1 font-mono text-[11px]">
+                            <span>Bắt đầu: <strong>{{ t.start_date|date:"d/m/Y" }}</strong></span>
+                            <span class="mx-1">•</span>
+                            <span>Kết thúc: <strong>{{ t.end_date|date:"d/m/Y" }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {% endif %}
+            {% empty %}
+            <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-xs text-slate-500">
+                Chưa có công việc nào trong danh sách.
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Cancelled Tasks Section if any -->
+        {% if cancelled_tasks %}
+        <div class="pt-6 border-t border-slate-200 space-y-3">
+            <h4 class="text-sm font-bold text-slate-600 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                <span>Đã hủy ({{ cancelled_tasks|length }})</span>
+            </h4>
+            <div class="space-y-2 opacity-75">
+                {% for ct in cancelled_tasks %}
+                <div class="p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                    <span class="line-through font-semibold">{{ ct.title }}</span>
+                    <span class="px-2 py-0.5 bg-slate-200 rounded text-[10px] uppercase font-bold">Đã Hủy</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- TAB 2: LINH KIỆN (MATERIALS) -->
+    <div id="tabContent-materials" class="{% if active_tab != 'materials' %}hidden{% endif %} space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+            
+            <!-- Header Bar & Export Excel Button -->
+            <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-brand-600"></i>
+                        <span>Bảng Linh Kiện & Chi Phí Dự Án</span>
+                    </h3>
+                    <p class="text-xs text-slate-400" id="tabAutoSaveIndicator"><i class="fa-solid fa-cloud-arrow-up text-brand-600 mr-1"></i> Tự động lưu sau 1s khi thay đổi dữ liệu</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tổng Tiền Linh Kiện</p>
+                        <p class="text-lg font-bold text-brand-700" id="tabProjectTotalDisplay">{{ total_components_cost|floatformat:0 }} VNĐ</p>
+                    </div>
+                    <a href="{% url 'components:export_excel' project.id %}" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow transition">
+                        <i class="fa-solid fa-file-excel text-sm"></i> Xuất Excel (.xlsx)
+                    </a>
+                </div>
+            </div>
+
+            {% if can_edit %}
+            <!-- Add Component Form -->
+            <form method="POST" action="{% url 'components:create' project.id %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                {% csrf_token %}
+                <div class="lg:col-span-2">
+                    <input type="text" name="name" required placeholder="Tên linh kiện *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <input type="number" name="quantity" min="1" value="1" placeholder="Số lượng *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <input type="number" name="unit_price" min="0" step="1000" placeholder="Đơn giá (VNĐ) *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <input type="text" name="shop" placeholder="Shop / Nơi mua" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <button type="submit" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg shadow transition">
+                        + Thêm linh kiện
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs text-slate-700">
+                    <thead>
+                        <tr class="bg-slate-100/70 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                            <th class="py-3 px-4 w-12 text-center">STT</th>
+                            <th class="py-3 px-4">Tên Linh Kiện</th>
+                            <th class="py-3 px-4 w-24 text-center">Số Lượng</th>
+                            <th class="py-3 px-4 w-36 text-right">Đơn Giá (VNĐ)</th>
+                            <th class="py-3 px-4 w-40 text-right">Thành Tiền (VNĐ)</th>
+                            <th class="py-3 px-4">Shop / Nơi Mua</th>
+                            <th class="py-3 px-4">Ghi Chú</th>
+                            {% if can_edit %}<th class="py-3 px-4 w-16 text-center">Xóa</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+                        {% for c in components %}
+                        <tr class="hover:bg-slate-50/80 transition" data-id="{{ c.id }}">
+                            <td class="py-3 px-4 text-center font-bold text-slate-400">{{ forloop.counter }}</td>
+                            <td class="py-2 px-3">
+                                <input type="text" value="{{ c.name }}" {% if not can_edit %}readonly{% endif %} class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none transition font-semibold text-slate-900 tab-auto-save" data-field="name">
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                <input type="number" min="1" value="{{ c.quantity }}" {% if not can_edit %}readonly{% endif %} class="w-20 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-center font-bold text-slate-800 tab-auto-save" data-field="quantity">
+                            </td>
+                            <td class="py-2 px-3 text-right">
+                                <input type="number" min="0" step="1000" value="{{ c.unit_price|floatformat:0 }}" {% if not can_edit %}readonly{% endif %} class="w-32 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-right font-mono font-semibold text-slate-800 tab-auto-save" data-field="unit_price">
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono font-bold text-brand-700 tab-total-price-cell">
+                                {{ c.total_price|floatformat:0 }}
+                            </td>
+                            <td class="py-2 px-3">
+                                <input type="text" value="{{ c.shop }}" {% if not can_edit %}readonly{% endif %} placeholder="Nhập shop..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="shop">
+                            </td>
+                            <td class="py-2 px-3">
+                                <input type="text" value="{{ c.notes }}" {% if not can_edit %}readonly{% endif %} placeholder="Ghi chú..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="notes">
+                            </td>
+                            {% if can_edit %}
+                            <td class="py-3 px-4 text-center">
+                                <form method="POST" action="{% url 'components:delete' c.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" onclick="return confirm('Xóa linh kiện {{ c.name }}?')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Xóa">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="py-8 text-center text-slate-400 italic">Dự án này chưa có linh kiện nào. Hãy nhập thông tin phía trên để thêm mới.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TAB 3: THÀNH VIÊN -->
+    <div id="tabContent-members" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Danh Sách Thành Viên ({{ members|length }})</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {% for m in members %}
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center text-xs">
+                        {{ m.email|slice:":1"|upper }}
+                    </div>
+                    <div class="truncate">
+                        <p class="text-xs font-semibold text-slate-800 truncate">{{ m.full_name|default:m.email }}</p>
+                        <p class="text-[10px] text-slate-500 truncate">{{ m.get_role_display }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: THÔNG TIN DỰ ÁN -->
+    <div id="tabContent-info" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 text-sm text-slate-700">
+            <h3 class="font-bold text-slate-800 uppercase tracking-wider text-xs">Thông Tin Chi Tiết Dự Án</h3>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                <p><strong>Tên dự án:</strong> {{ project.name }}</p>
+                <p><strong>Người tạo:</strong> {{ project.created_by.full_name|default:project.created_by.email }}</p>
+                <p><strong>Người quản lý:</strong> {{ project.manager.full_name|default:project.manager.email|default:"Chưa chỉ định" }}</p>
+                <p><strong>Thời gian:</strong> {{ project.start_date|date:"d/m/Y" }} đến {{ project.end_date|date:"d/m/Y" }}</p>
+                <p><strong>Mô tả:</strong> {{ project.description|default:"Chưa có mô tả." }}</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Assign Manager Modal -->
+<div id="assignModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-user-tie text-brand-600"></i>
+                <span>Chỉ Định Người Quản Lý Mới</span>
+            </h3>
+            <button onclick="closeModal('assignModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form method="POST" action="{% url 'projects:assign_manager' project.id %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Chọn Manager</label>
+                {{ assign_form.manager }}
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('assignModal')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-xl shadow">Xác Nhận Chỉ Định</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function toggleInlineTaskForm() {
+        const form = document.getElementById('inlineTaskFormCard');
+        if (form) {
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                const input = form.querySelector('input[name="title"]');
+                if (input) input.focus();
+            }
+        }
+    }
+
+    function switchTab(tabName) {
+        const tabs = ['checklist', 'materials', 'members', 'info'];
+        tabs.forEach(t => {
+            const content = document.getElementById('tabContent-' + t);
+            const btn = document.getElementById('tabBtn-' + t);
+            if (t === tabName) {
+                content.classList.remove('hidden');
+                btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow";
+            } else {
+                content.classList.add('hidden');
+                btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+            }
+        });
+    }
+
+    // Auto Save (~1s) for Components Tab
+    let tabSaveTimeout = null;
+    document.querySelectorAll('.tab-auto-save').forEach(input => {
+        input.addEventListener('input', function() {
+            const row = this.closest('tr');
+            const componentId = row.getAttribute('data-id');
+            const indicator = document.getElementById('tabAutoSaveIndicator');
+
+            if (indicator) {
+                indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-500 mr-1"></i> Đang nhập...';
+            }
+
+            clearTimeout(tabSaveTimeout);
+
+            tabSaveTimeout = setTimeout(() => {
+                const name = row.querySelector('[data-field="name"]').value;
+                const quantity = row.querySelector('[data-field="quantity"]').value;
+                const unit_price = row.querySelector('[data-field="unit_price"]').value;
+                const shop = row.querySelector('[data-field="shop"]').value;
+                const notes = row.querySelector('[data-field="notes"]').value;
+
+                fetch("{% url 'components:auto_save_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        id: componentId,
+                        name: name,
+                        quantity: quantity,
+                        unit_price: unit_price,
+                        shop: shop,
+                        notes: notes
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (indicator) {
+                            indicator.innerHTML = '<i class="fa-solid fa-check text-emerald-500 mr-1"></i> Đã tự động lưu lúc ' + new Date().toLocaleTimeString();
+                        }
+                        const cell = row.querySelector('.tab-total-price-cell');
+                        if (cell) cell.innerText = data.total_price.toLocaleString('vi-VN');
+                        const totalDisplay = document.getElementById('tabProjectTotalDisplay');
+                        if (totalDisplay) totalDisplay.innerText = data.project_total.toLocaleString('vi-VN') + ' VNĐ';
+                    }
+                })
+                .catch(err => {
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi tự động lưu';
+                    }
+                });
+            }, 1000); // 1000ms = 1s debounce
+        });
+    });
+</script>
+{% endblock %}
