@@ -10,8 +10,8 @@ load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-the-tea-default-key')
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
-ALLOWED_HOSTS = ['*', '.vercel.app', 'localhost', '127.0.0.1', 'the-mx89g9676-remlab-workspace.vercel.app']
+DEBUG = True
+ALLOWED_HOSTS = ['*', '.vercel.app', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -70,28 +70,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database Configuration (Supabase PostgreSQL / SQLite)
-USE_SQLITE = os.getenv('USE_SQLITE', 'True').lower() in ('true', '1', 't')
+# Database Configuration (Supabase PostgreSQL)
+USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() in ('true', '1', 't')
 
-if USE_SQLITE:
+if os.getenv('VERCEL') or not USE_SQLITE:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',
+            'USER': 'postgres.fyipewmrfnnxqmiwgodj',
+            'PASSWORD': 'Toanpham10@',
+            'HOST': 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'PORT': '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            }
         }
     }
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'postgres'),
-            'USER': os.getenv('DB_USER', 'postgres.fyipewmrfnnxqmiwgodj'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'Toanpham10@'),
-            'HOST': os.getenv('DB_HOST', 'aws-0-ap-southeast-1.pooler.supabase.com'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': 'require',
-            }
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
