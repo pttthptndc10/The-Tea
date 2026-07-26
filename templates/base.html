@@ -19,14 +19,14 @@
                     },
                     colors: {
                         brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            200: '#bbf7d0',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                            900: '#14532d',
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
                         }
                     }
                 }
@@ -40,20 +40,20 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full font-sans antialiased text-slate-800 bg-slate-50 flex flex-col min-h-screen">
+<body class="h-full font-sans antialiased text-slate-800 bg-pink-50/20 flex flex-col min-h-screen">
 
     {% if user.is_authenticated %}
     <!-- Logged In Layout with Sidebar & Header -->
     <div class="flex h-screen overflow-hidden">
         
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:inset-0 flex flex-col justify-between">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-md border-r border-pink-100 transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:inset-0 flex flex-col justify-between shadow-sm">
             <div>
                 <!-- Brand / Logo -->
-                <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100 bg-brand-900 text-white">
+                <div class="h-16 flex items-center justify-between px-6 border-b border-pink-100 bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-sm">
                     <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3 font-bold text-lg tracking-wide">
-                        <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white shadow">
-                            <i class="fa-solid fa-leaf text-sm"></i>
+                        <div class="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center text-white shadow">
+                            <i class="fa-solid fa-heart text-sm text-white"></i>
                         </div>
                         <span>The Tea</span>
                     </a>
@@ -65,7 +65,7 @@
                 <!-- Navigation Links -->
                 <nav class="p-4 space-y-1">
                     <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition">
-                        <i class="fa-solid fa-[#16a34a] fa-chart-pie w-5 text-center"></i>
+                        <i class="fa-solid fa-chart-pie w-5 text-center text-pink-600"></i>
                         <span>Tổng quan</span>
                     </a>
                     <a href="{% url 'projects:list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition">

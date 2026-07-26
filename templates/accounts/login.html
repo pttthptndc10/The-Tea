@@ -3,14 +3,14 @@
 {% block title %}Đăng Nhập - The Tea{% endblock %}
 
 {% block guest_content %}
-<div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-100 space-y-6">
+<div class="w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-pink-100/80 space-y-6">
     <!-- Logo & Brand Header -->
     <div class="text-center space-y-2">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 text-white text-2xl shadow-lg mb-2">
-            <i class="fa-solid fa-leaf"></i>
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-400 text-white text-2xl shadow-lg shadow-pink-500/30 mb-2">
+            <i class="fa-solid fa-heart"></i>
         </div>
-        <h1 class="text-2xl font-bold text-slate-800 tracking-tight">The Tea</h1>
-        <p class="text-sm text-slate-500">Hệ Thống Quản Lý Dự Án Nội Bộ</p>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-pink-700 to-rose-600 bg-clip-text text-transparent tracking-tight">The Tea</h1>
+        <p class="text-sm text-pink-400 font-medium">Hệ Thống Quản Lý Dự Án Nội Bộ</p>
     </div>
 
     <!-- Login Form -->
@@ -53,7 +53,7 @@
             </label>
         </div>
 
-        <button type="submit" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 hover:shadow-brand-600/50 transition duration-200">
+        <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition duration-200">
             Đăng Nhập
         </button>
     </form>
