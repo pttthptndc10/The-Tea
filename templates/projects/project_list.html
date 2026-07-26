@@ -69,35 +69,34 @@
     {% if projects %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for p in projects %}
-        <a href="{% url 'projects:detail' p.id %}" class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-brand-500 transition flex flex-col justify-between overflow-hidden group cursor-pointer">
+        <div class="bg-white rounded-3xl border border-pink-100 shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden">
             
             <div class="p-6 space-y-4">
                 <!-- Header: Badges & Title -->
                 <div class="space-y-2">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <!-- Project Title -->
+                        <h3 class="text-lg font-bold text-slate-900 line-clamp-1">
+                            {{ p.name }}
+                        </h3>
+
                         <!-- Status Badge -->
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider
+                        <span class="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider
                             {% if p.status == 'COMPLETED' %}bg-emerald-100 text-emerald-800
-                            {% elif p.status == 'IN_PROGRESS' %}bg-amber-100 text-amber-800
+                            {% elif p.status == 'IN_PROGRESS' %}bg-pink-100 text-pink-700 border border-pink-200
                             {% elif p.status == 'CANCELLED' %}bg-slate-100 text-slate-700
                             {% elif p.status == 'ON_HOLD' %}bg-purple-100 text-purple-800
                             {% else %}bg-sky-100 text-sky-800{% endif %}">
                             {{ p.get_status_display }}
                         </span>
-
-                        <!-- Priority Badge -->
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-medium
-                            {% if p.priority == 'URGENT' %}bg-rose-100 text-rose-800 font-bold
-                            {% elif p.priority == 'HIGH' %}bg-orange-100 text-orange-800
-                            {% else %}bg-slate-100 text-slate-600{% endif %}">
-                            <i class="fa-solid fa-flag text-[10px] mr-1"></i>{{ p.get_priority_display }}
-                        </span>
                     </div>
 
-                    <!-- Project Title -->
-                    <h3 class="text-lg font-bold text-slate-900 line-clamp-1 group-hover:text-brand-600 transition">
-                        {{ p.name }}
-                    </h3>
+                    <!-- Priority Badge -->
+                    <div>
+                        <span class="inline-block px-3 py-1 rounded-full text-[11px] font-semibold bg-pink-50 text-pink-700 border border-pink-100">
+                            {{ p.get_priority_display }}
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Unmanaged Warning Badge -->
@@ -113,39 +112,98 @@
                     {{ p.description|default:"Chưa có mô tả chi tiết." }}
                 </p>
 
-                <!-- Progress Bar -->
-                {% with progress=p.get_progress_percentage %}
-                <div class="space-y-1.5 pt-2">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="font-semibold text-slate-600">Tiến độ</span>
-                        <span class="font-bold text-brand-700">{{ progress }}%</span>
+                <!-- Due Date & Members -->
+                <div class="space-y-2 pt-1 text-xs text-slate-500">
+                    <div class="flex items-center gap-1.5 font-mono text-xs">
+                        <i class="fa-regular fa-calendar text-slate-400"></i>
+                        <span>{{ p.end_date|date:"d/m/Y" }}</span>
                     </div>
-                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ progress }}%;"></div>
+
+                    <!-- Progress Bar -->
+                    {% with progress=p.get_progress_percentage %}
+                    <div class="space-y-1.5 pt-1">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-600">Tiến độ</span>
+                            <span class="font-bold text-pink-600">{{ progress }}%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full transition-all duration-500" style="width: {{ progress }}%;"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-medium pt-0.5">
+                            {{ p.tasks.all|length }} công việc trong dự án
+                        </p>
+                    </div>
+                    {% endwith %}
+
+                    <!-- Manager / Members -->
+                    <div class="flex items-center gap-2 pt-1 text-xs text-slate-600">
+                        <div class="w-6 h-6 rounded-full bg-pink-600 text-white font-bold flex items-center justify-center text-[10px] shadow-sm">
+                            {% if p.manager %}
+                                {{ p.manager.email|slice:":1"|upper }}
+                            {% else %}
+                                ?
+                            {% endif %}
+                        </div>
+                        <span>
+                            {% if p.manager %}
+                                {{ p.manager.full_name|default:p.manager.email }}
+                            {% else %}
+                                <span class="text-rose-600 italic font-semibold">Chưa chỉ định</span>
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
-                {% endwith %}
             </div>
 
-            <!-- Footer: Manager & Dates -->
-            <div class="px-6 py-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-user-tie text-slate-400"></i>
-                    <span class="truncate max-w-[120px]" title="Người quản lý">
-                        {% if p.manager %}
-                            {{ p.manager.full_name|default:p.manager.email }}
-                        {% else %}
-                            <span class="text-rose-600 italic font-semibold">Chưa chỉ định</span>
-                        {% endif %}
-                    </span>
+            <!-- Footer Action Buttons (3 Buttons: Xem, Sửa, Xóa like Spec Image) -->
+            <div class="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center gap-2">
+                <!-- Button 1: Xem Details -->
+                <a href="{% url 'projects:detail' p.id %}" class="flex-1 py-2.5 px-3 bg-white hover:bg-pink-50 text-slate-700 hover:text-pink-700 font-bold text-xs rounded-xl border border-slate-200/80 transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i class="fa-regular fa-eye"></i>
+                    <span>Xem</span>
+                </a>
+
+                <!-- Button 2: Sửa Edit -->
+                <a href="{% url 'projects:edit' p.id %}" class="py-2.5 px-4 bg-white hover:bg-pink-50 text-slate-700 hover:text-pink-700 font-bold text-xs rounded-xl border border-slate-200/80 transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Sửa</span>
+                </a>
+
+                <!-- Button 3: Xóa Delete (Admin Only) -->
+                {% if user.role == 'ADMIN' or user.is_staff or user.is_superuser %}
+                <button type="button" onclick="openModal('deleteModal_{{ p.id }}')" class="py-2.5 px-3.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl border border-rose-200 transition flex items-center justify-center shadow-sm" title="Xóa dự án">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+
+                <!-- Delete Modal for Project -->
+                <div id="deleteModal_{{ p.id }}" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 border border-rose-100 text-left">
+                        <div class="flex items-center justify-between border-b border-rose-100 pb-3">
+                            <h3 class="text-lg font-bold text-rose-700 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                                <span>Xác Nhận Xóa Dự Án</span>
+                            </h3>
+                            <button type="button" onclick="closeModal('deleteModal_{{ p.id }}')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-600">
+                            <p>Bạn có chắc chắn muốn xóa dự án <strong class="text-slate-900">'{{ p.name }}'</strong> không?</p>
+                            <div class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-medium">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Hành động này sẽ xóa toàn bộ Nhiệm vụ và Linh kiện thuộc dự án và <strong>KHÔNG THỂ khôi phục</strong>.
+                            </div>
+                        </div>
+                        <form method="POST" action="{% url 'projects:delete' p.id %}" class="flex justify-end gap-3 pt-2">
+                            {% csrf_token %}
+                            <button type="button" onclick="closeModal('deleteModal_{{ p.id }}')" class="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Hủy bỏ</button>
+                            <button type="submit" class="px-5 py-2.5 text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white rounded-xl shadow-lg shadow-rose-500/30 transition">
+                                <i class="fa-solid fa-trash-can mr-1"></i> Đồng Ý Xóa
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1 font-mono text-[11px]">
-                    <i class="fa-regular fa-calendar text-slate-400"></i>
-                    <span>{{ p.end_date|date:"d/m/Y" }}</span>
-                </div>
+                {% endif %}
             </div>
 
-        </a>
+        </div>
         {% endfor %}
     </div>
     {% else %}
