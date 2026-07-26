@@ -11,7 +11,7 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-the-tea-default-key')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '.vercel.app', 'localhost', '127.0.0.1', 'the-mx89g9676-remlab-workspace.vercel.app']
 
 
 # Application definition
