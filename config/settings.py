@@ -89,8 +89,17 @@ else:
             'PASSWORD': os.getenv('DB_PASSWORD', ''),
             'HOST': os.getenv('DB_HOST', 'localhost'),
             'PORT': os.getenv('DB_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+            }
         }
     }
+
+# Session Engine (Signed cookies for Serverless compatibility if SQLite, DB sessions on PostgreSQL)
+if not USE_SQLITE:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+else:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
