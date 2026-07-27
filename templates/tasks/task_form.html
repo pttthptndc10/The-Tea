@@ -3,6 +3,14 @@
 {% block title %}{{ title }} - The Tea{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block back_button %}
+<a href="{% url 'tasks:list' %}" class="px-3 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-xl border border-slate-200/80 transition inline-flex items-center gap-1.5 text-xs font-semibold shadow-sm mr-1" title="Quay lại danh sách Công việc">
+    <i class="fa-solid fa-arrow-left text-xs"></i>
+    <span>Quay lại</span>
+</a>
+<span class="text-slate-300 mr-2">|</span>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">

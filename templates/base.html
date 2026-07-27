@@ -130,12 +130,7 @@
                     <button id="openSidebarMobile" class="md:hidden text-slate-600 hover:text-slate-900 p-2">
                         <i class="fa-solid fa-bars text-lg"></i>
                     </button>
-                    <!-- Global Back Arrow Button -->
-                    <button type="button" onclick="window.history.back()" class="px-3 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-xl border border-slate-200/80 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm" title="Quay lại trang trước">
-                        <i class="fa-solid fa-arrow-left text-xs"></i>
-                        <span>Quay lại</span>
-                    </button>
-                    <span class="text-slate-300">|</span>
+                    {% block back_button %}{% endblock %}
                     <h1 class="text-lg font-bold text-slate-800">{% block page_title %}Tổng Quan{% endblock %}</h1>
                 </div>
 

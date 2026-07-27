@@ -128,7 +128,25 @@
 
 <!-- AUTO SAVE DEBOUNCE SCRIPT (~1s) -->
 <script>
-    let saveTimeout = null;
+    let componentListTimeouts = {};
+
+    function updateGlobalComponentTotalsInstant() {
+        let grandTotal = 0;
+        document.querySelectorAll('tr[data-id]').forEach(row => {
+            const qInput = row.querySelector('[data-field="quantity"]');
+            const pInput = row.querySelector('[data-field="unit_price"]');
+            const q = qInput ? Math.max(0, parseFloat(qInput.value) || 0) : 0;
+            const p = pInput ? Math.max(0, parseFloat(pInput.value) || 0) : 0;
+            const rowTotal = q * p;
+            grandTotal += rowTotal;
+
+            const cell = row.querySelector('.total-price-cell');
+            if (cell) cell.innerText = rowTotal.toLocaleString('vi-VN');
+        });
+
+        const totalDisplay = document.getElementById('projectTotalDisplay');
+        if (totalDisplay) totalDisplay.innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
+    }
 
     document.querySelectorAll('.auto-save-input').forEach(input => {
         input.addEventListener('input', function() {
@@ -136,18 +154,20 @@
             const componentId = row.getAttribute('data-id');
             const indicator = document.getElementById('autoSaveIndicator');
 
+            updateGlobalComponentTotalsInstant();
+
             if (indicator) {
-                indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-500 mr-1"></i> Đang nhập...';
+                indicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
             }
 
-            clearTimeout(saveTimeout);
+            clearTimeout(componentListTimeouts[componentId]);
 
-            saveTimeout = setTimeout(() => {
-                const name = row.querySelector('[data-field="name"]').value;
-                const quantity = row.querySelector('[data-field="quantity"]').value;
-                const unit_price = row.querySelector('[data-field="unit_price"]').value;
-                const shop = row.querySelector('[data-field="shop"]').value;
-                const notes = row.querySelector('[data-field="notes"]').value;
+            componentListTimeouts[componentId] = setTimeout(() => {
+                const name = row.querySelector('[data-field="name"]')?.value || '';
+                const quantity = row.querySelector('[data-field="quantity"]')?.value || 1;
+                const unit_price = row.querySelector('[data-field="unit_price"]')?.value || 0;
+                const shop = row.querySelector('[data-field="shop"]')?.value || '';
+                const notes = row.querySelector('[data-field="notes"]')?.value || '';
 
                 fetch("{% url 'components:auto_save_api' %}", {
                     method: 'POST',
@@ -168,12 +188,12 @@
                 .then(data => {
                     if (data.status === 'success') {
                         if (indicator) {
-                            indicator.innerHTML = '<i class="fa-solid fa-check text-emerald-500 mr-1"></i> Đã tự động lưu lúc ' + new Date().toLocaleTimeString();
-                        }
-                        row.querySelector('.total-price-cell').innerText = data.total_price.toLocaleString('vi-VN');
-                        const totalDisplay = document.getElementById('projectTotalDisplay');
-                        if (totalDisplay) {
-                            totalDisplay.innerText = data.project_total.toLocaleString('vi-VN') + ' VNĐ';
+                            indicator.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500 mr-1"></i> Đã tự động lưu';
+                            setTimeout(() => {
+                                if (indicator.innerHTML.includes('Đã tự động lưu')) {
+                                    indicator.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-brand-600 mr-1"></i> Tự động lưu tức thời';
+                                }
+                            }, 2000);
                         }
                     }
                 })
@@ -182,7 +202,34 @@
                         indicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi tự động lưu';
                     }
                 });
-            }, 1000); // 1000ms = 1 second debounce
+            }, 200);
+        });
+
+        input.addEventListener('blur', function() {
+            const row = this.closest('tr');
+            const componentId = row.getAttribute('data-id');
+            clearTimeout(componentListTimeouts[componentId]);
+            const name = row.querySelector('[data-field="name"]')?.value || '';
+            const quantity = row.querySelector('[data-field="quantity"]')?.value || 1;
+            const unit_price = row.querySelector('[data-field="unit_price"]')?.value || 0;
+            const shop = row.querySelector('[data-field="shop"]')?.value || '';
+            const notes = row.querySelector('[data-field="notes"]')?.value || '';
+
+            fetch("{% url 'components:auto_save_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    id: componentId,
+                    name: name,
+                    quantity: quantity,
+                    unit_price: unit_price,
+                    shop: shop,
+                    notes: notes
+                })
+            });
         });
     });
 </script>
