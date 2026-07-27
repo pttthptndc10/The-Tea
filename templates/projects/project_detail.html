@@ -270,16 +270,20 @@
                 <!-- Dates & Assignee Editable Bar -->
                 <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
                     <div class="flex items-center gap-4 flex-wrap w-full justify-between">
-                        <!-- Assignee List -->
+                        <!-- Assignee Dropdown Select -->
                         <div class="flex items-center gap-1.5">
                             <span class="text-slate-400 font-semibold">Chỉ định:</span>
-                            <span class="font-semibold text-slate-800 bg-pink-50 text-pink-800 px-2 py-1 rounded-lg border border-pink-100">
-                                {% for a in t.assignees.all %}
-                                    {% if a.user %}{{ a.user.full_name|default:a.user.email }}{% endif %}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    Chưa giao
+                            <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
+                                data-id="{{ t.id }}" 
+                                data-field="assignee"
+                                {% if not can_edit %}disabled{% endif %}>
+                                <option value="">-- Chưa giao --</option>
+                                {% for m in members %}
+                                <option value="{{ m.id }}" {% if m.id in t.get_assignee_user_ids %}selected{% endif %}>
+                                    {{ m.full_name|default:m.email }}
+                                </option>
                                 {% endfor %}
-                            </span>
+                            </select>
                         </div>
 
                         <!-- Start & End Date Inputs -->
@@ -613,63 +617,94 @@
         });
     });
 
-    // Canva-style Auto Save (~1s debounce) for Task Cards directly
+    // Instant Auto Save for Task Cards
     let taskCardSaveTimeouts = {};
-    document.querySelectorAll('.task-card-auto-save').forEach(input => {
-        input.addEventListener('input', function() {
-            const taskId = this.getAttribute('data-id');
-            const statusIndicator = document.getElementById('task_save_status_' + taskId);
 
-            if (statusIndicator) {
-                statusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-500 mr-1"></i> Đang nhập...';
-            }
+    function performTaskAutoSave(taskId) {
+        const statusIndicator = document.getElementById('task_save_status_' + taskId);
 
-            clearTimeout(taskCardSaveTimeouts[taskId]);
+        if (statusIndicator) {
+            statusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-pink-500 mr-1"></i> Đang lưu...';
+        }
 
-            taskCardSaveTimeouts[taskId] = setTimeout(() => {
-                const card = document.getElementById('task_card_' + taskId);
-                const titleInput = card.querySelector('[data-field="title"]');
-                const notesInput = card.querySelector('[data-field="notes"]');
-                const startDateInput = card.querySelector('[data-field="start_date"]');
-                const endDateInput = card.querySelector('[data-field="end_date"]');
+        const card = document.getElementById('task_card_' + taskId);
+        if (!card) return;
 
-                const title = titleInput ? titleInput.value : '';
-                const notes = notesInput ? notesInput.value : '';
-                const startDate = startDateInput ? startDateInput.value : '';
-                const endDate = endDateInput ? endDateInput.value : '';
+        const titleInput = card.querySelector('[data-field="title"]');
+        const notesInput = card.querySelector('[data-field="notes"]');
+        const startDateInput = card.querySelector('[data-field="start_date"]');
+        const endDateInput = card.querySelector('[data-field="end_date"]');
+        const assigneeSelect = card.querySelector('[data-field="assignee"]');
 
-                fetch("{% url 'tasks:auto_save_api' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        id: taskId,
-                        title: title,
-                        notes: notes,
-                        start_date: startDate,
-                        end_date: endDate
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        if (statusIndicator) {
-                            statusIndicator.innerHTML = '<i class="fa-solid fa-check text-pink-600 mr-1"></i> Đã tự động lưu';
-                            setTimeout(() => {
-                                statusIndicator.innerText = '';
-                            }, 3000);
+        const title = titleInput ? titleInput.value : '';
+        const notes = notesInput ? notesInput.value : '';
+        const startDate = startDateInput ? startDateInput.value : '';
+        const endDate = endDateInput ? endDateInput.value : '';
+        const assignee = assigneeSelect ? assigneeSelect.value : null;
+
+        fetch("{% url 'tasks:auto_save_api' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                id: taskId,
+                title: title,
+                notes: notes,
+                start_date: startDate,
+                end_date: endDate,
+                assignee: assignee
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = '<i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đã lưu';
+                    setTimeout(() => {
+                        if (statusIndicator.innerHTML.includes('Đã lưu')) {
+                            statusIndicator.innerText = '';
                         }
-                    }
-                })
-                .catch(err => {
-                    if (statusIndicator) {
-                        statusIndicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi tự động lưu';
-                    }
-                });
-            }, 1000); // 1000ms = 1s Canva-style debounce
+                    }, 2000);
+                }
+            }
+        })
+        .catch(err => {
+            if (statusIndicator) {
+                statusIndicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi lưu';
+            }
         });
+    }
+
+    document.querySelectorAll('.task-card-auto-save').forEach(element => {
+        // Instant save on dropdown change or date change
+        if (element.tagName === 'SELECT' || element.type === 'date') {
+            element.addEventListener('change', function() {
+                const taskId = this.getAttribute('data-id');
+                performTaskAutoSave(taskId);
+            });
+        } else {
+            // Fast 200ms debounce for text inputs
+            element.addEventListener('input', function() {
+                const taskId = this.getAttribute('data-id');
+                const statusIndicator = document.getElementById('task_save_status_' + taskId);
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
+                }
+
+                clearTimeout(taskCardSaveTimeouts[taskId]);
+                taskCardSaveTimeouts[taskId] = setTimeout(() => {
+                    performTaskAutoSave(taskId);
+                }, 200); // 200ms ultra-fast response
+            });
+
+            element.addEventListener('blur', function() {
+                const taskId = this.getAttribute('data-id');
+                clearTimeout(taskCardSaveTimeouts[taskId]);
+                performTaskAutoSave(taskId);
+            });
+        }
     });
 </script>
 {% endblock %}

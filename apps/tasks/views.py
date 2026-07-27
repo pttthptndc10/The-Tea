@@ -267,7 +267,7 @@ from django.http import JsonResponse
 @require_POST
 def task_auto_save_api(request):
     """
-    Canva-style debounced Auto-Save API for task card inline edits (~1s delay).
+    Instant Auto-Save API for task card inline edits.
     """
     try:
         data = json.loads(request.body)
@@ -281,6 +281,7 @@ def task_auto_save_api(request):
         notes = data.get('notes', '').strip()
         start_date = data.get('start_date') or task.start_date
         end_date = data.get('end_date') or task.end_date
+        assignee_id = data.get('assignee')
 
         if title:
             task.title = title
@@ -288,16 +289,26 @@ def task_auto_save_api(request):
             task.start_date = start_date
             task.end_date = end_date
             task.save()
+
+            if assignee_id is not None:
+                if assignee_id:
+                    assignee_user = User.objects.filter(id=assignee_id).first()
+                    if assignee_user:
+                        TaskService.assign_members(task, [assignee_user])
+                else:
+                    TaskAssignee.objects.filter(task=task).delete()
+
             return JsonResponse({
                 'status': 'success',
                 'title': task.title,
                 'notes': task.notes,
-                'message': 'Đã tự động lưu'
+                'message': 'Đã lưu'
             })
         
         return JsonResponse({'status': 'error', 'message': 'Tên không được để trống'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 
 
 
