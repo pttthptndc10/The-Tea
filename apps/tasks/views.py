@@ -162,16 +162,56 @@ def task_update_status_view(request, task_id):
 @require_POST
 def task_cancel_view(request, task_id):
     """
-    Soft cancel task (moves to "Đã hủy" tab, no DB deletion).
+    Soft cancel task (moves to "Đã hủy" section).
     """
     task = get_object_or_404(Task, id=task_id)
     if not TaskService.user_can_edit_task(request.user, task):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện'}, status=403)
         messages.error(request, "Không có quyền thực hiện.")
         return redirect('tasks:detail', task_id=task.id)
 
     TaskService.cancel_task(task)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({
+            'status': 'success',
+            'task_id': str(task.id),
+            'new_status': task.status,
+            'progress_percentage': task.project.get_progress_percentage()
+        })
+
     messages.warning(request, f"Nhiệm vụ '{task.title}' đã chuyển sang danh sách Đã Hủy.")
     return redirect(request.META.get('HTTP_REFERER', 'tasks:list'))
+
+
+@login_required
+@require_POST
+def task_restore_view(request, task_id):
+    """
+    Restore task from "Đã hủy" back to "TODO".
+    """
+    task = get_object_or_404(Task, id=task_id)
+    if not TaskService.user_can_edit_task(request.user, task):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện'}, status=403)
+        messages.error(request, "Không có quyền thực hiện.")
+        return redirect('tasks:detail', task_id=task.id)
+
+    task.status = Task.Status.TODO
+    task.save()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({
+            'status': 'success',
+            'task_id': str(task.id),
+            'new_status': task.status,
+            'progress_percentage': task.project.get_progress_percentage()
+        })
+
+    messages.success(request, f"Đã khôi phục nhiệm vụ '{task.title}'.")
+    return redirect(request.META.get('HTTP_REFERER', 'tasks:list'))
+
 
 
 @login_required
