@@ -235,11 +235,11 @@
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <button type="button" 
-                                onclick="toggleTaskStatusAjax('{{ t.id }}')" 
+                                disabled
                                 id="task_checkbox_{{ t.id }}"
-                                class="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white transition shadow-sm flex items-center justify-center text-xs" 
+                                class="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white transition shadow-sm flex items-center justify-center text-xs cursor-not-allowed" 
                                 data-status="COMPLETED"
-                                title="Đánh dấu chưa hoàn thành">
+                                title="Đã hoàn thành (Chỉ có thể bỏ tick khi ở mục Cần Làm)">
                                 <i class="fa-solid fa-check"></i>
                             </button>
 
@@ -249,11 +249,11 @@
                                 </span>
                                 <input type="text" 
                                     id="task_title_input_{{ t.id }}"
-                                    class="task-card-auto-save font-bold text-sm text-slate-400 line-through border-b border-transparent hover:border-emerald-300 focus:border-emerald-500 focus:bg-emerald-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
+                                    class="task-card-auto-save font-bold text-sm text-slate-400 line-through border-b border-transparent px-2 py-1 rounded-lg transition w-full cursor-not-allowed" 
                                     data-id="{{ t.id }}" 
                                     data-field="title" 
                                     value="{{ t.title }}" 
-                                    {% if not can_edit %}readonly{% endif %}>
+                                    readonly>
                             </div>
                         </div>
 
@@ -276,21 +276,21 @@
 
                     <div class="text-xs text-slate-500 pl-8 space-y-1">
                         <textarea rows="1"
-                            class="task-card-auto-save auto-expand-textarea italic text-slate-500 border-b border-transparent hover:border-emerald-300 focus:border-emerald-500 focus:bg-emerald-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
+                            class="task-card-auto-save auto-expand-textarea italic text-slate-500 border-b border-transparent px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal cursor-not-allowed" 
                             data-id="{{ t.id }}" 
                             data-field="notes" 
-                            placeholder="Nhập ghi chú công việc..." 
-                            {% if not can_edit %}readonly{% endif %}>{{ t.notes }}</textarea>
+                            placeholder="Ghi chú công việc..." 
+                            readonly>{{ t.notes }}</textarea>
                     </div>
 
                     <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
                         <div class="flex items-center gap-4 flex-wrap w-full justify-between">
                             <div class="flex items-center gap-1.5">
                                 <span class="text-slate-400 font-semibold">Chỉ định:</span>
-                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-emerald-200 text-xs font-semibold bg-emerald-50 text-emerald-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-emerald-200 text-xs font-semibold bg-emerald-50 text-emerald-800 cursor-not-allowed opacity-70"
                                     data-id="{{ t.id }}" 
                                     data-field="assignee"
-                                    {% if not can_edit %}disabled{% endif %}>
+                                    disabled>
                                     <option value="">-- Chưa giao --</option>
                                     {% for m in members %}
                                     <option value="{{ m.id }}" {% if m.id in t.get_assignee_user_ids %}selected{% endif %}>
@@ -303,11 +303,11 @@
                             <div class="flex items-center gap-3 font-mono text-[11px]">
                                 <div class="flex items-center gap-1">
                                     <span class="text-slate-400">Bắt đầu:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="start_date" value="{{ t.start_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700 bg-white cursor-not-allowed" data-id="{{ t.id }}" data-field="start_date" value="{{ t.start_date|date:'Y-m-d' }}" readonly>
                                 </div>
                                 <div class="flex items-center gap-1">
                                     <span class="text-slate-400">Kết thúc:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="end_date" value="{{ t.end_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700 bg-white cursor-not-allowed" data-id="{{ t.id }}" data-field="end_date" value="{{ t.end_date|date:'Y-m-d' }}" readonly>
                                 </div>
                             </div>
                         </div>
@@ -333,11 +333,11 @@
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <button type="button" 
-                                onclick="toggleTaskStatusAjax('{{ t.id }}')" 
+                                disabled
                                 id="task_checkbox_{{ t.id }}"
-                                class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 bg-white text-transparent" 
+                                class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 bg-white text-transparent cursor-not-allowed" 
                                 data-status="CANCELLED"
-                                title="Đánh dấu hoàn thành">
+                                title="Đã hủy (Không thể tick)">
                                 <i class="fa-solid fa-check"></i>
                             </button>
 
@@ -347,11 +347,11 @@
                                 </span>
                                 <input type="text" 
                                     id="task_title_input_{{ t.id }}"
-                                    class="task-card-auto-save font-bold text-sm text-slate-400 line-through border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
+                                    class="task-card-auto-save font-bold text-sm text-slate-400 line-through border-b border-transparent px-2 py-1 rounded-lg transition w-full cursor-not-allowed" 
                                     data-id="{{ t.id }}" 
                                     data-field="title" 
                                     value="{{ t.title }}" 
-                                    {% if not can_edit %}readonly{% endif %}>
+                                    readonly>
                             </div>
                         </div>
 
@@ -375,21 +375,21 @@
                     <div class="text-xs text-slate-500 pl-8 space-y-1">
                         <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng):</p>
                         <textarea rows="1"
-                            class="task-card-auto-save auto-expand-textarea italic text-slate-500 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
+                            class="task-card-auto-save auto-expand-textarea italic text-slate-500 border-b border-transparent px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal cursor-not-allowed" 
                             data-id="{{ t.id }}" 
                             data-field="notes" 
-                            placeholder="Nhập ghi chú công việc..." 
-                            {% if not can_edit %}readonly{% endif %}>{{ t.notes }}</textarea>
+                            placeholder="Ghi chú công việc..." 
+                            readonly>{{ t.notes }}</textarea>
                     </div>
 
                     <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
                         <div class="flex items-center gap-4 flex-wrap w-full justify-between">
                             <div class="flex items-center gap-1.5">
                                 <span class="text-slate-400 font-semibold">Chỉ định:</span>
-                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
+                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 cursor-not-allowed opacity-70"
                                     data-id="{{ t.id }}" 
                                     data-field="assignee"
-                                    {% if not can_edit %}disabled{% endif %}>
+                                    disabled>
                                     <option value="">-- Chưa giao --</option>
                                     {% for m in members %}
                                     <option value="{{ m.id }}" {% if m.id in t.get_assignee_user_ids %}selected{% endif %}>
@@ -402,11 +402,11 @@
                             <div class="flex items-center gap-3 font-mono text-[11px]">
                                 <div class="flex items-center gap-1">
                                     <span class="text-slate-400">Bắt đầu:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="start_date" value="{{ t.start_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700 bg-white cursor-not-allowed" data-id="{{ t.id }}" data-field="start_date" value="{{ t.start_date|date:'Y-m-d' }}" readonly>
                                 </div>
                                 <div class="flex items-center gap-1">
                                     <span class="text-slate-400">Kết thúc:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="end_date" value="{{ t.end_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700 bg-white cursor-not-allowed" data-id="{{ t.id }}" data-field="end_date" value="{{ t.end_date|date:'Y-m-d' }}" readonly>
                                 </div>
                             </div>
                         </div>
@@ -873,6 +873,17 @@
                 select.classList.add('cursor-not-allowed', 'opacity-70');
             } else {
                 select.classList.remove('cursor-not-allowed', 'opacity-70');
+            }
+        });
+        card.querySelectorAll('button[id^="task_checkbox_"]').forEach(chk => {
+            chk.disabled = !editable;
+            if (!editable) {
+                chk.classList.add('cursor-not-allowed');
+                chk.removeAttribute('onclick');
+            } else {
+                chk.classList.remove('cursor-not-allowed');
+                const taskId = card.getAttribute('data-id');
+                chk.setAttribute('onclick', "toggleTaskStatusAjax('" + taskId + "')");
             }
         });
     }
