@@ -535,16 +535,8 @@
         if (form) {
             form.classList.toggle('hidden');
             if (!form.classList.contains('hidden')) {
-    function toggleTaskInlineEdit(taskId) {
-        const viewDiv = document.getElementById('task_view_' + taskId);
-        const formDiv = document.getElementById('task_form_' + taskId);
-        if (viewDiv && formDiv) {
-            if (formDiv.classList.contains('hidden')) {
-                viewDiv.classList.add('hidden');
-                formDiv.classList.remove('hidden');
-            } else {
-                formDiv.classList.add('hidden');
-                viewDiv.classList.remove('hidden');
+                const input = form.querySelector('input[name="title"]');
+                if (input) input.focus();
             }
         }
     }
