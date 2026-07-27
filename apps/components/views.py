@@ -42,24 +42,61 @@ def component_list_view(request):
 @require_POST
 def component_create_view(request, project_id):
     """
-    Create a component record for a project.
+    Create a component record for a project (supports both AJAX JSON and Form POST).
     """
     project = get_object_or_404(Project, id=project_id)
     if not ProjectService.user_can_edit(request.user, project):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({'status': 'error', 'message': 'Dự án hiện ở chế độ View-Only.'}, status=403)
         messages.error(request, "Dự án hiện ở chế độ View-Only.")
-        return redirect('projects:detail', project_id=project.id)
+        return redirect(f"/projects/{project.id}/?tab=materials")
 
-    form = ComponentForm(request.POST)
-    if form.is_valid():
-        component = form.save(commit=False)
-        component.project = project
-        component.save()
-        messages.success(request, f"Đã thêm linh kiện '{component.name}'.")
-    else:
-        messages.error(request, "Vui lòng nhập thông tin linh kiện hợp lệ.")
+    name = request.POST.get('name') or ''
+    quantity = int(request.POST.get('quantity') or 1)
+    unit_price = float(request.POST.get('unit_price') or 0)
+    shop = request.POST.get('shop', '')
+    notes = request.POST.get('notes', '')
 
-    redirect_url = request.META.get('HTTP_REFERER') or f"/projects/{project.id}/?tab=materials"
-    return redirect(redirect_url)
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name') or ''
+            quantity = int(data.get('quantity') or 1)
+            unit_price = float(data.get('unit_price') or 0)
+            shop = data.get('shop', '')
+            notes = data.get('notes', '')
+        except Exception:
+            pass
+
+    if not name:
+        name = "Linh kiện mới"
+
+    component = Component.objects.create(
+        project=project,
+        name=name,
+        quantity=quantity,
+        unit_price=unit_price,
+        shop=shop,
+        notes=notes
+    )
+
+    project_total = Component.objects.filter(project=project).aggregate(Sum('total_price'))['total_price__sum'] or 0
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+        return JsonResponse({
+            'status': 'success',
+            'id': str(component.id),
+            'name': component.name,
+            'quantity': component.quantity,
+            'unit_price': float(component.unit_price),
+            'total_price': float(component.total_price),
+            'shop': component.shop,
+            'notes': component.notes,
+            'project_total': float(project_total)
+        })
+
+    messages.success(request, f"Đã thêm linh kiện '{component.name}'.")
+    return redirect(f"/projects/{project.id}/?tab=materials")
 
 
 @login_required
@@ -106,20 +143,30 @@ def component_auto_save_api(request):
 @require_POST
 def component_delete_view(request, component_id):
     """
-    Delete component record.
+    Delete component record (supports AJAX JSON and Form POST).
     """
     component = get_object_or_404(Component, id=component_id)
-    project_id = component.project.id
+    project = component.project
     name = component.name
 
     if not ProjectService.user_can_edit(request.user, component.project):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': 'Dự án hiện ở chế độ View-Only.'}, status=403)
         messages.error(request, "Dự án hiện ở chế độ View-Only.")
-        return redirect('projects:detail', project_id=project_id)
+        return redirect(f"/projects/{project.id}/?tab=materials")
 
     component.delete()
+    project_total = Component.objects.filter(project=project).aggregate(Sum('total_price'))['total_price__sum'] or 0
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success',
+            'message': f"Đã xóa linh kiện '{name}'.",
+            'project_total': float(project_total)
+        })
+
     messages.success(request, f"Đã xóa linh kiện '{name}'.")
-    redirect_url = request.META.get('HTTP_REFERER') or f"/projects/{project_id}/?tab=materials"
-    return redirect(redirect_url)
+    return redirect(f"/projects/{project.id}/?tab=materials")
 
 
 @login_required

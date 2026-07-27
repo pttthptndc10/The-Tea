@@ -466,30 +466,6 @@
                 </div>
             </div>
 
-            {% if can_edit %}
-            <!-- Add Component Form -->
-            <form method="POST" action="{% url 'components:create' project.id %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {% csrf_token %}
-                <div class="lg:col-span-2">
-                    <input type="text" name="name" required placeholder="Tên linh kiện *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
-                </div>
-                <div>
-                    <input type="number" name="quantity" min="1" value="1" placeholder="Số lượng *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
-                </div>
-                <div>
-                    <input type="number" name="unit_price" min="0" step="1000" placeholder="Đơn giá (VNĐ) *" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
-                </div>
-                <div>
-                    <input type="text" name="shop" placeholder="Shop / Nơi mua" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-brand-500">
-                </div>
-                <div>
-                    <button type="submit" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg shadow transition">
-                        + Thêm linh kiện
-                    </button>
-                </div>
-            </form>
-            {% endif %}
-
             <!-- Table -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs text-slate-700">
@@ -505,47 +481,54 @@
                             {% if can_edit %}<th class="py-3 px-4 w-16 text-center">Xóa</th>{% endif %}
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 font-medium">
+                    <tbody id="componentTableBody" class="divide-y divide-slate-100 font-medium">
                         {% for c in components %}
                         <tr class="hover:bg-slate-50/80 transition" data-id="{{ c.id }}">
-                            <td class="py-3 px-4 text-center font-bold text-slate-400">{{ forloop.counter }}</td>
+                            <td class="py-3 px-4 text-center font-bold text-slate-400 stt-cell">{{ forloop.counter }}</td>
                             <td class="py-2 px-3">
-                                <input type="text" value="{{ c.name }}" {% if not can_edit %}readonly{% endif %} class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none transition font-semibold text-slate-900 tab-auto-save" data-field="name">
+                                <input type="text" value="{{ c.name }}" {% if not can_edit %}readonly{% endif %} class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none transition font-semibold text-slate-900 tab-auto-save" data-field="name">
                             </td>
                             <td class="py-2 px-3 text-center">
-                                <input type="number" min="1" value="{{ c.quantity }}" {% if not can_edit %}readonly{% endif %} class="w-20 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-center font-bold text-slate-800 tab-auto-save" data-field="quantity">
+                                <input type="number" min="1" value="{{ c.quantity }}" {% if not can_edit %}readonly{% endif %} class="w-20 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-center font-bold text-slate-800 tab-auto-save" data-field="quantity">
                             </td>
                             <td class="py-2 px-3 text-right">
-                                <input type="number" min="0" step="1000" value="{{ c.unit_price|floatformat:0 }}" {% if not can_edit %}readonly{% endif %} class="w-32 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-right font-mono font-semibold text-slate-800 tab-auto-save" data-field="unit_price">
+                                <input type="number" min="0" step="1000" value="{{ c.unit_price|floatformat:0 }}" {% if not can_edit %}readonly{% endif %} class="w-32 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-right font-mono font-semibold text-slate-800 tab-auto-save" data-field="unit_price">
                             </td>
-                            <td class="py-3 px-4 text-right font-mono font-bold text-brand-700 tab-total-price-cell">
+                            <td class="py-3 px-4 text-right font-mono font-bold text-pink-600 tab-total-price-cell">
                                 {{ c.total_price|floatformat:0 }}
                             </td>
                             <td class="py-2 px-3">
-                                <input type="text" value="{{ c.shop }}" {% if not can_edit %}readonly{% endif %} placeholder="Nhập shop..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="shop">
+                                <input type="text" value="{{ c.shop }}" {% if not can_edit %}readonly{% endif %} placeholder="Nhập shop..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="shop">
                             </td>
                             <td class="py-2 px-3">
-                                <input type="text" value="{{ c.notes }}" {% if not can_edit %}readonly{% endif %} placeholder="Ghi chú..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="notes">
+                                <input type="text" value="{{ c.notes }}" {% if not can_edit %}readonly{% endif %} placeholder="Ghi chú..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="notes">
                             </td>
                             {% if can_edit %}
                             <td class="py-3 px-4 text-center">
-                                <form method="POST" action="{% url 'components:delete' c.id %}" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" onclick="return confirm('Xóa linh kiện {{ c.name }}?')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Xóa">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </form>
+                                <button type="button" onclick="deleteComponentAjax('{{ c.id }}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Xóa linh kiện">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </td>
                             {% endif %}
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="8" class="py-8 text-center text-slate-400 italic">Dự án này chưa có linh kiện nào. Hãy nhập thông tin phía trên để thêm mới.</td>
+                        <tr id="emptyComponentRow">
+                            <td colspan="8" class="py-8 text-center text-slate-400 italic">Dự án này chưa có linh kiện nào. Bấm nút <strong>"+ Thêm linh kiện"</strong> phía dưới để tạo mới.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            {% if can_edit %}
+            <!-- Bottom Add Component Button (Instant 0ms Blank Row Creation) -->
+            <div class="pt-2 flex items-center justify-between">
+                <button type="button" onclick="createBlankComponentRowAjax()" class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-200/80 transition flex items-center gap-2">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>+ Thêm linh kiện</span>
+                </button>
+            </div>
+            {% endif %}
 
         </div>
     </div>
@@ -654,24 +637,40 @@
             const content = document.getElementById('tabContent-' + t);
             const btn = document.getElementById('tabBtn-' + t);
             if (t === tabName) {
-                content.classList.remove('hidden');
-                btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow";
+                if (content) content.classList.remove('hidden');
+                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-md shadow-pink-200/80";
             } else {
-                content.classList.add('hidden');
-                btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+                if (content) content.classList.add('hidden');
+                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-pink-50 hover:text-pink-700 border border-slate-200";
             }
         });
+        localStorage.setItem('activeProjectTab_{{ project.id }}', tabName);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tabName);
+        window.history.replaceState(null, '', url.toString());
     }
+
+    // Auto load tab from URL or LocalStorage
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('tab') || localStorage.getItem('activeProjectTab_{{ project.id }}') || '{{ active_tab }}' || 'checklist';
+        switchTab(initialTab);
+    });
 
     // Instant live total calculation & fast auto-save for Components Tab
     let tabSaveTimeouts = {};
 
-    function updateComponentTableTotalsInstant(containerId, totalDisplayId, cellClass) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
+    function updateComponentTableTotalsInstant() {
+        const tbody = document.getElementById('componentTableBody');
+        if (!tbody) return;
 
         let grandTotal = 0;
-        container.querySelectorAll('tr[data-id]').forEach(row => {
+        let count = 0;
+        tbody.querySelectorAll('tr[data-id]').forEach((row, idx) => {
+            count++;
+            const sttCell = row.querySelector('.stt-cell');
+            if (sttCell) sttCell.innerText = count;
+
             const qInput = row.querySelector('[data-field="quantity"]');
             const pInput = row.querySelector('[data-field="unit_price"]');
             const q = qInput ? Math.max(0, parseFloat(qInput.value) || 0) : 0;
@@ -679,98 +678,164 @@
             const rowTotal = q * p;
             grandTotal += rowTotal;
 
-            const cell = row.querySelector('.' + cellClass);
+            const cell = row.querySelector('.tab-total-price-cell');
             if (cell) cell.innerText = rowTotal.toLocaleString('vi-VN');
         });
 
-        const totalDisplay = document.getElementById(totalDisplayId);
+        const totalDisplay = document.getElementById('tabProjectTotalDisplay');
         if (totalDisplay) totalDisplay.innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
     }
 
-    document.querySelectorAll('.tab-auto-save').forEach(input => {
-        input.addEventListener('input', function() {
-            const row = this.closest('tr');
-            const componentId = row.getAttribute('data-id');
-            const indicator = document.getElementById('tabAutoSaveIndicator');
+    function performComponentSave(row) {
+        const componentId = row.getAttribute('data-id');
+        const indicator = document.getElementById('tabAutoSaveIndicator');
+        const name = row.querySelector('[data-field="name"]')?.value || '';
+        const quantity = row.querySelector('[data-field="quantity"]')?.value || 1;
+        const unit_price = row.querySelector('[data-field="unit_price"]')?.value || 0;
+        const shop = row.querySelector('[data-field="shop"]')?.value || '';
+        const notes = row.querySelector('[data-field="notes"]')?.value || '';
 
-            updateComponentTableTotalsInstant('tabContent-materials', 'tabProjectTotalDisplay', 'tab-total-price-cell');
+        if (indicator) indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-pink-500 mr-1"></i> Đang lưu...';
 
-            if (indicator) {
-                indicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
-            }
+        const isNew = componentId.startsWith('temp_comp_');
+        const endpoint = isNew ? "{% url 'components:create' project.id %}" : "{% url 'components:auto_save_api' %}";
 
-            clearTimeout(tabSaveTimeouts[componentId]);
-
-            tabSaveTimeouts[componentId] = setTimeout(() => {
-                const name = row.querySelector('[data-field="name"]')?.value || '';
-                const quantity = row.querySelector('[data-field="quantity"]')?.value || 1;
-                const unit_price = row.querySelector('[data-field="unit_price"]')?.value || 0;
-                const shop = row.querySelector('[data-field="shop"]')?.value || '';
-                const notes = row.querySelector('[data-field="notes"]')?.value || '';
-
-                fetch("{% url 'components:auto_save_api' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        id: componentId,
-                        name: name,
-                        quantity: quantity,
-                        unit_price: unit_price,
-                        shop: shop,
-                        notes: notes
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        if (indicator) {
-                            indicator.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500 mr-1"></i> Đã tự động lưu';
-                            setTimeout(() => {
-                                if (indicator.innerHTML.includes('Đã tự động lưu')) {
-                                    indicator.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-brand-600 mr-1"></i> Tự động lưu tức thời';
-                                }
-                            }, 2000);
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                id: componentId,
+                name: name,
+                quantity: quantity,
+                unit_price: unit_price,
+                shop: shop,
+                notes: notes
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (isNew && data.id) {
+                    row.setAttribute('data-id', data.id);
+                    const delBtn = row.querySelector('button[onclick*="deleteComponentAjax"]');
+                    if (delBtn) delBtn.setAttribute('onclick', `deleteComponentAjax('${data.id}')`);
+                }
+                updateComponentTableTotalsInstant();
+                if (indicator) {
+                    indicator.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500 mr-1"></i> Đã tự động lưu';
+                    setTimeout(() => {
+                        if (indicator.innerHTML.includes('Đã tự động lưu')) {
+                            indicator.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-brand-600 mr-1"></i> Tự động lưu tức thời';
                         }
-                    }
-                })
-                .catch(err => {
-                    if (indicator) {
-                        indicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi tự động lưu';
-                    }
-                });
-            }, 200);
+                    }, 2000);
+                }
+            }
+        })
+        .catch(err => {
+            if (indicator) indicator.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500 mr-1"></i> Lỗi lưu';
         });
+    }
 
-        input.addEventListener('blur', function() {
-            const row = this.closest('tr');
-            const componentId = row.getAttribute('data-id');
-            clearTimeout(tabSaveTimeouts[componentId]);
-            const name = row.querySelector('[data-field="name"]')?.value || '';
-            const quantity = row.querySelector('[data-field="quantity"]')?.value || 1;
-            const unit_price = row.querySelector('[data-field="unit_price"]')?.value || 0;
-            const shop = row.querySelector('[data-field="shop"]')?.value || '';
-            const notes = row.querySelector('[data-field="notes"]')?.value || '';
+    function attachComponentRowListeners(row) {
+        row.querySelectorAll('.tab-auto-save').forEach(input => {
+            input.addEventListener('input', function() {
+                const componentId = row.getAttribute('data-id');
+                const indicator = document.getElementById('tabAutoSaveIndicator');
+                updateComponentTableTotalsInstant();
 
-            fetch("{% url 'components:auto_save_api' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    id: componentId,
-                    name: name,
-                    quantity: quantity,
-                    unit_price: unit_price,
-                    shop: shop,
-                    notes: notes
-                })
+                if (indicator) indicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
+
+                clearTimeout(tabSaveTimeouts[componentId]);
+                tabSaveTimeouts[componentId] = setTimeout(() => {
+                    performComponentSave(row);
+                }, 200);
+            });
+
+            input.addEventListener('blur', function() {
+                const componentId = row.getAttribute('data-id');
+                clearTimeout(tabSaveTimeouts[componentId]);
+                performComponentSave(row);
             });
         });
+    }
+
+    // Attach listeners to all existing component rows
+    document.querySelectorAll('#componentTableBody tr[data-id]').forEach(row => {
+        attachComponentRowListeners(row);
     });
+
+    function createBlankComponentRowAjax() {
+        const tbody = document.getElementById('componentTableBody');
+        if (!tbody) return;
+
+        const emptyRow = document.getElementById('emptyComponentRow');
+        if (emptyRow) emptyRow.remove();
+
+        const tempId = 'temp_comp_' + Date.now();
+        const stt = tbody.querySelectorAll('tr[data-id]').length + 1;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.setAttribute('data-id', tempId);
+        tr.innerHTML = `
+            <td class="py-3 px-4 text-center font-bold text-slate-400 stt-cell">${stt}</td>
+            <td class="py-2 px-3">
+                <input type="text" value="" placeholder="Tên linh kiện *" class="w-full px-2 py-1.5 rounded border border-pink-300 focus:border-pink-500 focus:bg-white focus:outline-none transition font-semibold text-slate-900 tab-auto-save" data-field="name">
+            </td>
+            <td class="py-2 px-3 text-center">
+                <input type="number" min="1" value="1" class="w-20 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-center font-bold text-slate-800 tab-auto-save" data-field="quantity">
+            </td>
+            <td class="py-2 px-3 text-right">
+                <input type="number" min="0" step="1000" value="0" placeholder="0" class="w-32 px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-right font-mono font-semibold text-slate-800 tab-auto-save" data-field="unit_price">
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-pink-600 tab-total-price-cell">
+                0
+            </td>
+            <td class="py-2 px-3">
+                <input type="text" value="" placeholder="Shop / Nơi mua..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="shop">
+            </td>
+            <td class="py-2 px-3">
+                <input type="text" value="" placeholder="Ghi chú..." class="w-full px-2 py-1.5 rounded border border-transparent hover:border-slate-200 focus:border-pink-500 focus:bg-white focus:outline-none text-slate-600 tab-auto-save" data-field="notes">
+            </td>
+            <td class="py-3 px-4 text-center">
+                <button type="button" onclick="deleteComponentAjax('${tempId}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Xóa linh kiện">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+        attachComponentRowListeners(tr);
+
+        const nameInput = tr.querySelector('[data-field="name"]');
+        if (nameInput) nameInput.focus();
+
+        updateComponentTableTotalsInstant();
+    }
+
+    function deleteComponentAjax(componentId) {
+        const row = document.querySelector(`tr[data-id="${componentId}"]`);
+        if (row) row.remove();
+
+        updateComponentTableTotalsInstant();
+
+        if (!componentId.startsWith('temp_comp_')) {
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            fetch(`/components/${componentId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+        }
+    }
 
     // Instant Auto Save for Task Cards
     let taskCardSaveTimeouts = {};
