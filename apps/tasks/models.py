@@ -56,6 +56,9 @@ class Task(models.Model):
     def is_cancelled(self):
         return self.status == self.Status.CANCELLED
 
+    def get_assignee_user_ids(self):
+        return list(self.assignees.values_list('user_id', flat=True))
+
     def __str__(self):
         return f"[{self.project.name}] {self.title} ({self.get_status_display()})"
 

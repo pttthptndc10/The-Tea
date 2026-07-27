@@ -222,3 +222,41 @@ def task_quick_create_view(request, project_id):
     messages.success(request, f"Đã tạo công việc '{task.title}' thành công!")
     return redirect('projects:detail', project_id=project.id)
 
+
+@login_required
+@require_POST
+def task_inline_edit_view(request, task_id):
+    """
+    Inline Task Editing directly on the Task Card.
+    """
+    task = get_object_or_404(Task, id=task_id)
+    if not TaskService.user_can_edit_task(request.user, task):
+        messages.error(request, "Bạn không có quyền chỉnh sửa công việc này.")
+        return redirect(request.META.get('HTTP_REFERER', 'projects:list'))
+
+    title = request.POST.get('title', '').strip()
+    notes = request.POST.get('notes', '').strip()
+    start_date = request.POST.get('start_date') or task.start_date
+    end_date = request.POST.get('end_date') or task.end_date
+    assignee_ids = request.POST.getlist('assignees')
+
+    if title:
+        task.title = title
+        task.notes = notes
+        task.start_date = start_date
+        task.end_date = end_date
+        task.save()
+
+        if assignee_ids:
+            assignees = User.objects.filter(id__in=assignee_ids)
+            TaskService.assign_members(task, assignees)
+        else:
+            TaskAssignee.objects.filter(task=task).delete()
+
+        messages.success(request, f"Đã cập nhật công việc '{task.title}' ngay trên thẻ!")
+    else:
+        messages.error(request, "Tên công việc không được để trống.")
+
+    return redirect(request.META.get('HTTP_REFERER', 'projects:list'))
+
+

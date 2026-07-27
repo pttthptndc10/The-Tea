@@ -196,87 +196,157 @@
 
             {% for t in tasks %}
             {% if t.status != 'CANCELLED' %}
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 hover:border-brand-300 transition">
-                <!-- Task Main Line -->
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <!-- Quick Complete Checkbox -->
-                        <form method="POST" action="{% url 'tasks:update_status' t.id %}" class="inline">
-                            {% csrf_token %}
-                            {% if t.status == 'COMPLETED' %}
-                            <input type="hidden" name="status" value="TODO">
-                            <button type="submit" class="w-5 h-5 rounded border-2 border-brand-500 bg-brand-500 text-white flex items-center justify-center text-xs" title="Đánh dấu chưa hoàn thành">
-                                <i class="fa-solid fa-check"></i>
-                            </button>
-                            {% else %}
-                            <input type="hidden" name="status" value="COMPLETED">
-                            <button type="submit" class="w-5 h-5 rounded border-2 border-slate-300 hover:border-brand-500 bg-white flex items-center justify-center text-xs transition" title="Đánh dấu đã hoàn thành">
-                            </button>
-                            {% endif %}
-                        </form>
+            <div id="task_card_{{ t.id }}" class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 hover:border-pink-300 transition">
+                
+                <!-- NORMAL VIEW STATE -->
+                <div id="task_view_{{ t.id }}" class="space-y-4">
+                    <!-- Task Main Line -->
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <!-- Quick Complete Checkbox -->
+                            <form method="POST" action="{% url 'tasks:update_status' t.id %}" class="inline">
+                                {% csrf_token %}
+                                {% if t.status == 'COMPLETED' %}
+                                <input type="hidden" name="status" value="TODO">
+                                <button type="submit" class="w-5 h-5 rounded border-2 border-pink-500 bg-pink-500 text-white flex items-center justify-center text-xs" title="Đánh dấu chưa hoàn thành">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                {% else %}
+                                <input type="hidden" name="status" value="COMPLETED">
+                                <button type="submit" class="w-5 h-5 rounded border-2 border-slate-300 hover:border-pink-500 bg-white flex items-center justify-center text-xs transition" title="Đánh dấu đã hoàn thành">
+                                </button>
+                                {% endif %}
+                            </form>
 
-                        <!-- Project Name Tag + Task Title -->
-                        <div class="flex items-center gap-2 min-w-0 flex-wrap">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-100 text-brand-800">
-                                {{ project.name|truncatechars:20 }}
-                            </span>
-                            <a href="{% url 'tasks:detail' t.id %}" class="font-bold text-sm text-slate-900 hover:text-brand-600 transition truncate {% if t.status == 'COMPLETED' %}line-through text-slate-400{% endif %}">
-                                {{ t.title }}
-                            </a>
+                            <!-- Project Name Tag + Task Title -->
+                            <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-100 text-pink-800">
+                                    {{ project.name|truncatechars:20 }}
+                                </span>
+                                <span class="font-bold text-sm text-slate-900 truncate {% if t.status == 'COMPLETED' %}line-through text-slate-400{% endif %}">
+                                    {{ t.title }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons Right (Sửa trực tiếp, Hủy bỏ, Delete) -->
+                        <div class="flex items-center gap-2">
+                            {% if can_edit %}
+                            <button type="button" onclick="toggleTaskInlineEdit('{{ t.id }}')" class="px-3 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-semibold rounded-xl text-xs border border-pink-200 transition shadow-sm flex items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square text-[11px]"></i> Sửa trên thẻ
+                            </button>
+                            <form method="POST" action="{% url 'tasks:cancel' t.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Chuyển task sang tab Đã Hủy?')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition">
+                                    Hủy bỏ
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if user.role == 'ADMIN' or project.manager == user %}
+                            <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Xóa hẳn task này?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa">
+                                    <i class="fa-solid fa-trash-can text-sm"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Action Buttons Right (Hủy bỏ / Delete) -->
-                    <div class="flex items-center gap-2">
-                        {% if can_edit %}
-                        <form method="POST" action="{% url 'tasks:cancel' t.id %}" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" onclick="return confirm('Chuyển task sang tab Đã Hủy?')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                    <!-- Notes preview -->
+                    <div class="text-xs text-slate-500 pl-8 space-y-1">
+                        <p class="font-semibold text-slate-400">Ghi chú công việc:</p>
+                        <p class="italic text-slate-600">{{ t.notes|default:"Chưa có ghi chú cho công việc..." }}</p>
+                    </div>
+
+                    <!-- Inline Details Bar (Assignee & Dates) -->
+                    <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <!-- Assignee Dropdown/List -->
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-semibold">Chỉ định:</span>
+                                <span class="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded">
+                                    {% for a in t.assignees.all %}
+                                        {% if a.user %}{{ a.user.full_name|default:a.user.email }}{% endif %}{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                        Chưa giao
+                                    {% endfor %}
+                                </span>
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="flex items-center gap-1 font-mono text-[11px]">
+                                <span>Bắt đầu: <strong>{{ t.start_date|date:"d/m/Y" }}</strong></span>
+                                <span class="mx-1">•</span>
+                                <span>Kết thúc: <strong>{{ t.end_date|date:"d/m/Y" }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INLINE EDIT FORM STATE (HIDDEN BY DEFAULT, EXPANDS DIRECTLY ON CARD) -->
+                {% if can_edit %}
+                <div id="task_form_{{ t.id }}" class="hidden space-y-4 pt-1">
+                    <form method="POST" action="{% url 'tasks:inline_edit' t.id %}" class="space-y-4 bg-pink-50/40 p-4 rounded-2xl border border-pink-100">
+                        {% csrf_token %}
+                        <div class="flex items-center justify-between border-b border-pink-200/60 pb-2">
+                            <span class="text-xs font-bold text-pink-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Trực Tiếp Trên Thẻ
+                            </span>
+                            <button type="button" onclick="toggleTaskInlineEdit('{{ t.id }}')" class="text-xs text-slate-400 hover:text-slate-600">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <!-- Title Field -->
+                            <div class="col-span-2 space-y-1">
+                                <label class="font-semibold text-slate-700">Tên công việc</label>
+                                <input type="text" name="title" value="{{ t.title }}" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 font-semibold text-slate-800 bg-white">
+                            </div>
+
+                            <!-- Notes Field -->
+                            <div class="col-span-2 space-y-1">
+                                <label class="font-semibold text-slate-700">Ghi chú công việc</label>
+                                <textarea name="notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 text-slate-700 bg-white" placeholder="Nhập ghi chú...">{{ t.notes }}</textarea>
+                            </div>
+
+                            <!-- Assignees Select -->
+                            <div class="space-y-1">
+                                <label class="font-semibold text-slate-700">Người thực hiện</label>
+                                <select name="assignees" multiple class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 h-20 bg-white">
+                                    {% for m in members %}
+                                    <option value="{{ m.id }}" {% if m.id in t.get_assignee_user_ids %}selected{% endif %}>{{ m.full_name|default:m.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="font-semibold text-slate-700 block mb-1">Ngày bắt đầu</label>
+                                    <input type="date" name="start_date" value="{{ t.start_date|date:'Y-m-d' }}" class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="font-semibold text-slate-700 block mb-1">Ngày kết thúc</label>
+                                    <input type="date" name="end_date" value="{{ t.end_date|date:'Y-m-d' }}" class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 bg-white">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-pink-200/60">
+                            <button type="button" onclick="toggleTaskInlineEdit('{{ t.id }}')" class="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition">
                                 Hủy bỏ
                             </button>
-                        </form>
-                        {% endif %}
-
-                        {% if user.role == 'ADMIN' or project.manager == user %}
-                        <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" onclick="return confirm('Xóa hẳn task này?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            <button type="submit" class="px-4 py-1.5 text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white rounded-xl shadow-md shadow-pink-500/30 transition flex items-center gap-1">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Ngay Trực Tiếp
                             </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Notes preview -->
-                <div class="text-xs text-slate-500 pl-8 space-y-1">
-                    <p class="font-semibold text-slate-400">Ghi chú công việc:</p>
-                    <p class="italic text-slate-600">{{ t.notes|default:"Chưa có ghi chú cho công việc..." }}</p>
-                </div>
-
-                <!-- Inline Details Bar (Assignee & Dates) -->
-                <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <!-- Assignee Dropdown/List -->
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-slate-400 font-semibold">Chỉ định:</span>
-                            <span class="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded">
-                                {% for a in t.assignees.all %}
-                                    {% if a.user %}{{ a.user.full_name|default:a.user.email }}{% endif %}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    Chưa giao
-                                {% endfor %}
-                            </span>
                         </div>
-
-                        <!-- Dates -->
-                        <div class="flex items-center gap-1 font-mono text-[11px]">
-                            <span>Bắt đầu: <strong>{{ t.start_date|date:"d/m/Y" }}</strong></span>
-                            <span class="mx-1">•</span>
-                            <span>Kết thúc: <strong>{{ t.end_date|date:"d/m/Y" }}</strong></span>
-                        </div>
-                    </div>
+                    </form>
                 </div>
+                {% endif %}
 
             </div>
             {% endif %}
@@ -507,8 +577,16 @@
         if (form) {
             form.classList.toggle('hidden');
             if (!form.classList.contains('hidden')) {
-                const input = form.querySelector('input[name="title"]');
-                if (input) input.focus();
+    function toggleTaskInlineEdit(taskId) {
+        const viewDiv = document.getElementById('task_view_' + taskId);
+        const formDiv = document.getElementById('task_form_' + taskId);
+        if (viewDiv && formDiv) {
+            if (formDiv.classList.contains('hidden')) {
+                viewDiv.classList.add('hidden');
+                formDiv.classList.remove('hidden');
+            } else {
+                formDiv.classList.add('hidden');
+                viewDiv.classList.remove('hidden');
             }
         }
     }
