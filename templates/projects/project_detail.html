@@ -221,7 +221,7 @@
                             <span id="task_save_status_{{ t.id }}" class="text-[11px] font-medium text-slate-400 italic"></span>
 
                             {% if can_edit %}
-                            <button type="button" onclick="cancelTaskAjax('{{ t.id }}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
+                            <button type="button" onclick="cancelTaskAjax('{{ t.id }}')" class="cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
                                 Hủy bỏ
                             </button>
                             {% endif %}
@@ -321,7 +321,7 @@
                             <span id="task_save_status_{{ t.id }}" class="text-[11px] font-medium text-slate-400 italic"></span>
 
                             {% if can_edit %}
-                            <button type="button" onclick="cancelTaskAjax('{{ t.id }}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
+                            <button type="button" onclick="cancelTaskAjax('{{ t.id }}')" class="cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
                                 Hủy bỏ
                             </button>
                             {% endif %}
@@ -969,7 +969,7 @@
                         <div class="flex items-center gap-3">
                             <span id="task_save_status_${data.task_id}" class="text-[11px] font-medium text-slate-400 italic"></span>
 
-                            <button type="button" onclick="cancelTaskAjax('${data.task_id}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
+                            <button type="button" onclick="cancelTaskAjax('${data.task_id}')" class="cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
                                 Hủy bỏ
                             </button>
 
@@ -1041,6 +1041,14 @@
             card.setAttribute('data-status', 'CANCELLED');
             const titleInput = card.querySelector('[data-field="title"]');
             if (titleInput) titleInput.classList.add('line-through', 'text-slate-400');
+
+            const actionBtn = card.querySelector('.cancel-action-btn');
+            if (actionBtn) {
+                actionBtn.setAttribute('onclick', "restoreTaskAjax('" + taskId + "')");
+                actionBtn.className = "cancel-action-btn px-3.5 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5";
+                actionBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Khôi phục';
+                actionBtn.title = "Khôi phục công việc";
+            }
         }
         updateSectionTaskCounts();
 
@@ -1074,6 +1082,14 @@
             card.setAttribute('data-status', 'TODO');
             const titleInput = card.querySelector('[data-field="title"]');
             if (titleInput) titleInput.classList.remove('line-through', 'text-slate-400');
+
+            const actionBtn = card.querySelector('.cancel-action-btn');
+            if (actionBtn) {
+                actionBtn.setAttribute('onclick', "cancelTaskAjax('" + taskId + "')");
+                actionBtn.className = "cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition";
+                actionBtn.innerHTML = 'Hủy bỏ';
+                actionBtn.title = "Chuyển sang Đã Hủy";
+            }
         }
         updateSectionTaskCounts();
 
