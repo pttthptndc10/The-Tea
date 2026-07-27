@@ -97,8 +97,12 @@
                         {% endif %}
                     </form>
 
-                    <a href="{% url 'purchases:detail' s.id %}" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs transition" title="Xem chi tiết">
-                        <i class="fa-solid fa-chevron-right"></i>
+                    <a href="{% url 'purchases:detail' s.id %}" 
+                       onmouseenter="if(!window['pref_purc_{{ s.id }}']){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window['pref_purc_{{ s.id }}']=true; }"
+                       onclick="document.body.style.opacity='0.85';"
+                       class="px-3.5 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-700 hover:text-pink-700 font-bold rounded-xl text-xs transition flex items-center gap-1 shadow-sm" title="Xem chi tiết">
+                        <span>Chi tiết</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
                     </a>
                 </div>
             </div>
