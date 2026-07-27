@@ -201,20 +201,15 @@
                 <!-- Top Header: Checkbox + Title Input + Auto-save indicator + Actions -->
                 <div class="flex items-center justify-between gap-3 flex-wrap">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <!-- Quick Complete Checkbox -->
-                        <form method="POST" action="{% url 'tasks:update_status' t.id %}" class="inline">
-                            {% csrf_token %}
-                            {% if t.status == 'COMPLETED' %}
-                            <input type="hidden" name="status" value="TODO">
-                            <button type="submit" class="w-5 h-5 rounded border-2 border-pink-500 bg-pink-500 text-white flex items-center justify-center text-xs shadow-sm" title="Đánh dấu chưa hoàn thành">
-                                <i class="fa-solid fa-check"></i>
-                            </button>
-                            {% else %}
-                            <input type="hidden" name="status" value="COMPLETED">
-                            <button type="submit" class="w-5 h-5 rounded border-2 border-slate-300 hover:border-pink-500 bg-white flex items-center justify-center text-xs transition shadow-sm" title="Đánh dấu đã hoàn thành">
-                            </button>
-                            {% endif %}
-                        </form>
+                        <!-- Quick Complete Checkbox (Instant AJAX 0ms) -->
+                        <button type="button" 
+                            onclick="toggleTaskStatusAjax('{{ t.id }}')" 
+                            id="task_checkbox_{{ t.id }}"
+                            class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs {% if t.status == 'COMPLETED' %}border-pink-500 bg-pink-500 text-white{% else %}border-slate-300 hover:border-pink-500 bg-white text-transparent{% endif %}" 
+                            data-status="{{ t.status }}"
+                            title="Đánh dấu hoàn thành / chưa hoàn thành">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
 
                         <!-- Project Tag + Directly Editable Title Input (Canva Style) -->
                         <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -222,6 +217,7 @@
                                 {{ project.name|truncatechars:20 }}
                             </span>
                             <input type="text" 
+                                id="task_title_input_{{ t.id }}"
                                 class="task-card-auto-save font-bold text-sm text-slate-900 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full {% if t.status == 'COMPLETED' %}line-through text-slate-400{% endif %}" 
                                 data-id="{{ t.id }}" 
                                 data-field="title" 
@@ -255,16 +251,16 @@
                     </div>
                 </div>
 
-                <!-- Notes: Directly Editable Input (Canva Style) -->
+                <!-- Notes: Multi-line Auto-expanding Textarea (Canva Style) -->
                 <div class="text-xs text-slate-500 pl-8 space-y-1">
-                    <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Tự động lưu sau 1s):</p>
-                    <input type="text" 
-                        class="task-card-auto-save italic text-slate-700 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs" 
+                    <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng - Tự động dãn thẻ):</p>
+                    <textarea 
+                        rows="1"
+                        class="task-card-auto-save auto-expand-textarea italic text-slate-700 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
                         data-id="{{ t.id }}" 
                         data-field="notes" 
-                        value="{{ t.notes }}" 
                         placeholder="Nhập ghi chú công việc..." 
-                        {% if not can_edit %}readonly{% endif %}>
+                        {% if not can_edit %}readonly{% endif %}>{{ t.notes }}</textarea>
                 </div>
 
                 <!-- Dates & Assignee Editable Bar -->
@@ -705,6 +701,66 @@
                 performTaskAutoSave(taskId);
             });
         }
+    });
+
+    // Instant AJAX Checkbox Completion (0ms visual delay)
+    function toggleTaskStatusAjax(taskId) {
+        const checkbox = document.getElementById('task_checkbox_' + taskId);
+        const titleInput = document.getElementById('task_title_input_' + taskId);
+        if (!checkbox) return;
+
+        const currentStatus = checkbox.getAttribute('data-status');
+        const newStatus = (currentStatus === 'COMPLETED') ? 'TODO' : 'COMPLETED';
+
+        // Optimistic instant UI update (0ms)
+        if (newStatus === 'COMPLETED') {
+            checkbox.className = "w-5 h-5 rounded border-2 border-pink-500 bg-pink-500 text-white flex items-center justify-center text-xs shadow-sm transition";
+            if (titleInput) titleInput.classList.add('line-through', 'text-slate-400');
+            checkbox.setAttribute('data-status', 'COMPLETED');
+        } else {
+            checkbox.className = "w-5 h-5 rounded border-2 border-slate-300 hover:border-pink-500 bg-white text-transparent flex items-center justify-center text-xs shadow-sm transition";
+            if (titleInput) titleInput.classList.remove('line-through', 'text-slate-400');
+            checkbox.setAttribute('data-status', 'TODO');
+        }
+
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/tasks/' + taskId + '/update-status/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const statusIndicator = document.getElementById('task_save_status_' + taskId);
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = '<i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đã lưu';
+                    setTimeout(() => { statusIndicator.innerText = ''; }, 2000);
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Task status update failed:', err);
+        });
+    }
+
+    // Auto-expanding multi-line textarea handler
+    function autoResizeTextarea(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    document.querySelectorAll('.auto-expand-textarea').forEach(textarea => {
+        autoResizeTextarea(textarea);
+        textarea.addEventListener('input', function() {
+            autoResizeTextarea(this);
+        });
     });
 </script>
 {% endblock %}

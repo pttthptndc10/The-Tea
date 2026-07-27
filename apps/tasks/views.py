@@ -130,10 +130,12 @@ def task_edit_view(request, task_id):
 @require_POST
 def task_update_status_view(request, task_id):
     """
-    Quick status update for task.
+    Quick status update for task with AJAX JSON response support.
     """
     task = get_object_or_404(Task, id=task_id)
     if not TaskService.user_can_edit_task(request.user, task):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện'}, status=403)
         messages.error(request, "Không có quyền thực hiện.")
         return redirect('tasks:detail', task_id=task.id)
 
@@ -141,6 +143,16 @@ def task_update_status_view(request, task_id):
     if new_status in [choice[0] for choice in Task.Status.choices]:
         task.status = new_status
         task.save()
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({
+                'status': 'success',
+                'task_id': str(task.id),
+                'new_status': task.status,
+                'status_display': task.get_status_display(),
+                'progress_percentage': task.project.get_progress_percentage()
+            })
+
         messages.success(request, f"Đã đổi trạng thái nhiệm vụ '{task.title}' thành {task.get_status_display()}.")
 
     return redirect(request.META.get('HTTP_REFERER', 'tasks:list'))
