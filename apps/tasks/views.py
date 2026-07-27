@@ -260,3 +260,44 @@ def task_inline_edit_view(request, task_id):
     return redirect(request.META.get('HTTP_REFERER', 'projects:list'))
 
 
+import json
+from django.http import JsonResponse
+
+@login_required
+@require_POST
+def task_auto_save_api(request):
+    """
+    Canva-style debounced Auto-Save API for task card inline edits (~1s delay).
+    """
+    try:
+        data = json.loads(request.body)
+        task_id = data.get('id')
+        task = get_object_or_404(Task, id=task_id)
+
+        if not TaskService.user_can_edit_task(request.user, task):
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền chỉnh sửa'}, status=403)
+
+        title = data.get('title', '').strip()
+        notes = data.get('notes', '').strip()
+        start_date = data.get('start_date') or task.start_date
+        end_date = data.get('end_date') or task.end_date
+
+        if title:
+            task.title = title
+            task.notes = notes
+            task.start_date = start_date
+            task.end_date = end_date
+            task.save()
+            return JsonResponse({
+                'status': 'success',
+                'title': task.title,
+                'notes': task.notes,
+                'message': 'Đã tự động lưu'
+            })
+        
+        return JsonResponse({'status': 'error', 'message': 'Tên không được để trống'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+
