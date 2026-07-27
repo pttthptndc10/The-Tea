@@ -121,71 +121,11 @@
                 </h3>
 
                 {% if can_edit %}
-                <button type="button" onclick="toggleInlineTaskForm()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-500/20 transition cursor-pointer">
+                <button type="button" onclick="createBlankTaskCardAjax()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-500/20 transition cursor-pointer">
                     <i class="fa-solid fa-plus"></i> Thêm công việc
                 </button>
                 {% endif %}
             </div>
-
-            <!-- Inline New Task Card Form -->
-            {% if can_edit %}
-            <form id="inlineTaskFormCard" method="POST" action="{% url 'tasks:quick_create' project.id %}" class="hidden bg-pink-50/70 rounded-2xl border-2 border-pink-300 p-5 shadow-md space-y-4 transition">
-                {% csrf_token %}
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 flex-1">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-600 text-white">
-                            {{ project.name|truncatechars:15 }}
-                        </span>
-                        <input type="text" name="title" required placeholder="Nhập tên công việc mới..." 
-                            class="flex-1 px-3 py-1.5 rounded-xl border border-pink-200 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500 focus:outline-none bg-white">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="submit" class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow transition">
-                            <i class="fa-solid fa-check mr-1"></i> Lưu công việc
-                        </button>
-                        <button type="button" onclick="toggleInlineTaskForm()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition">
-                            Hủy
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Notes Inline -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-semibold text-slate-500">Ghi chú công việc:</label>
-                    <textarea name="notes" placeholder="Ghi chú thêm cho công việc..." rows="2" 
-                        class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none bg-white"></textarea>
-                </div>
-
-                <!-- Inline Assignee, Priority & Dates -->
-                <div class="flex items-center justify-between gap-4 text-xs text-slate-600 flex-wrap pt-2 border-t border-pink-200/50">
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-slate-500 font-semibold">Chỉ định:</span>
-                            <select name="assignees" multiple class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-pink-500">
-                                {% for m in members %}
-                                <option value="{{ m.id }}">{{ m.full_name|default:m.email }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2 font-mono">
-                            <span>Bắt đầu:</span>
-                            <input type="date" name="start_date" value="{{ project.start_date|date:'Y-m-d' }}" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
-                            <span>Kết thúc:</span>
-                            <input type="date" name="end_date" value="{{ project.end_date|date:'Y-m-d' }}" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span>Độ ưu tiên:</span>
-                            <select name="priority" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white">
-                                <option value="LOW">Thấp</option>
-                                <option value="MEDIUM" selected>Trung bình</option>
-                                <option value="HIGH">Cao</option>
-                                <option value="URGENT">Khẩn cấp</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </form>
-            {% endif %}
 
             <!-- SECTION 1 TASKS CONTAINER -->
             <div id="section_todo_tasks" class="space-y-4">
