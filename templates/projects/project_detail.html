@@ -842,36 +842,6 @@
         });
     }
 
-    document.querySelectorAll('.task-card-auto-save').forEach(element => {
-        // Instant save on dropdown change or date change
-        if (element.tagName === 'SELECT' || element.type === 'date') {
-            element.addEventListener('change', function() {
-                const taskId = this.getAttribute('data-id');
-                performTaskAutoSave(taskId);
-            });
-        } else {
-            // Fast 200ms debounce for text inputs
-            element.addEventListener('input', function() {
-                const taskId = this.getAttribute('data-id');
-                const statusIndicator = document.getElementById('task_save_status_' + taskId);
-                if (statusIndicator) {
-                    statusIndicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
-                }
-
-                clearTimeout(taskCardSaveTimeouts[taskId]);
-                taskCardSaveTimeouts[taskId] = setTimeout(() => {
-                    performTaskAutoSave(taskId);
-                }, 200); // 200ms ultra-fast response
-            });
-
-            element.addEventListener('blur', function() {
-                const taskId = this.getAttribute('data-id');
-                clearTimeout(taskCardSaveTimeouts[taskId]);
-                performTaskAutoSave(taskId);
-            });
-        }
-    });
-
     // Instant AJAX Checkbox Completion (0ms visual delay)
     function toggleTaskStatusAjax(taskId) {
         const checkbox = document.getElementById('task_checkbox_' + taskId);
@@ -1310,11 +1280,6 @@
         el.style.height = el.scrollHeight + 'px';
     }
 
-    document.querySelectorAll('.auto-expand-textarea').forEach(textarea => {
-        autoResizeTextarea(textarea);
-        textarea.addEventListener('input', function() {
-            autoResizeTextarea(this);
-        });
-    });
+    attachAutoSaveListeners(document);
 </script>
 {% endblock %}

@@ -431,6 +431,11 @@
             }
         });
 
+        document.addEventListener('submit', function(e) {
+            // Invalidate SPA pageCache on form submit so created/modified data is loaded fresh
+            window.pageCache = {};
+        });
+
         window.pageCache[location.href] = document.documentElement.outerHTML;
     </script>
     {% block extra_js %}{% endblock %}
