@@ -235,11 +235,11 @@
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <button type="button" 
-                                disabled
+                                onclick="toggleTaskStatusAjax('{{ t.id }}')" 
                                 id="task_checkbox_{{ t.id }}"
-                                class="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white transition shadow-sm flex items-center justify-center text-xs cursor-not-allowed" 
+                                class="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white transition shadow-sm flex items-center justify-center text-xs" 
                                 data-status="COMPLETED"
-                                title="Đã hoàn thành (Chỉ có thể bỏ tick khi ở mục Cần Làm)">
+                                title="Đánh dấu chưa hoàn thành (Chuyển về Cần làm)">
                                 <i class="fa-solid fa-check"></i>
                             </button>
 
@@ -876,8 +876,9 @@
             }
         });
         card.querySelectorAll('button[id^="task_checkbox_"]').forEach(chk => {
-            chk.disabled = !editable;
-            if (!editable) {
+            const isCancelled = card.getAttribute('data-status') === 'CANCELLED';
+            chk.disabled = isCancelled;
+            if (isCancelled) {
                 chk.classList.add('cursor-not-allowed');
                 chk.removeAttribute('onclick');
             } else {
