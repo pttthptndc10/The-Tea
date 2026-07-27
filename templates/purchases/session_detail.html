@@ -4,11 +4,27 @@
 {% block page_title %}Chi Tiết Phiên Mua Sắm{% endblock %}
 
 {% block back_button %}
-<a href="{% url 'purchases:list' %}" class="px-3 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-xl border border-slate-200/80 transition inline-flex items-center gap-1.5 text-xs font-semibold shadow-sm mr-1" title="Quay lại danh sách Mua sắm">
+<a href="{% url 'purchases:list' %}" 
+   onmouseenter="if(!window.prefetchedPurchasesList){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.prefetchedPurchasesList=true; }"
+   onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin text-xs\'></i> Đang về...'; document.body.style.opacity='0.85';"
+   class="px-3 py-1.5 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-xl border border-slate-200/80 transition inline-flex items-center gap-1.5 text-xs font-semibold shadow-sm mr-1" title="Quay lại danh sách Mua sắm">
     <i class="fa-solid fa-arrow-left text-xs"></i>
     <span>Quay lại</span>
 </a>
 <span class="text-slate-300 mr-2">|</span>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            if (!window.prefetchedPurchasesList) {
+                const l = document.createElement('link');
+                l.rel = 'prefetch';
+                l.href = "{% url 'purchases:list' %}";
+                document.head.appendChild(l);
+                window.prefetchedPurchasesList = true;
+            }
+        }, 300);
+    });
+</script>
 {% endblock %}
 
 {% block content %}
