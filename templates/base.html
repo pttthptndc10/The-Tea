@@ -72,24 +72,9 @@
                     </a>
 
                     <a href="{% url 'projects:list' %}" 
-                       onmouseenter="if(!window.pref_proj){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_proj=true; }"
                        class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'projects' %}bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-200/80 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
                         <i class="fa-solid fa-folder-tree w-5 text-center"></i>
                         <span>Dự án</span>
-                    </a>
-
-                    <a href="{% url 'tasks:list' %}" 
-                       onmouseenter="if(!window.pref_task){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_task=true; }"
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'tasks' %}bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-200/80 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-list-check w-5 text-center"></i>
-                        <span>Công việc</span>
-                    </a>
-
-                    <a href="{% url 'components:list' %}" 
-                       onmouseenter="if(!window.pref_comp){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_comp=true; }"
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'components' %}bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-200/80 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-microchip w-5 text-center"></i>
-                        <span>Linh kiện</span>
                     </a>
 
                     <a href="{% url 'purchases:list' %}" 
@@ -274,6 +259,41 @@
                 sidebar.classList.add('-translate-x-full');
             });
         }
+    </script>
+    <!-- Global Instant Optimistic Tab Transition & Skeleton Blur Loader Script -->
+    <script>
+        document.addEventListener('click', function(e) {
+            const a = e.target.closest('a');
+            if (!a || !a.href || a.target === '_blank' || a.hasAttribute('download') || a.getAttribute('href').startsWith('#') || a.getAttribute('href').startsWith('javascript')) return;
+            if (a.origin !== location.origin) return;
+            if (a.pathname.includes('/logout') || a.pathname.includes('/export')) return;
+
+            // 0ms Instant Active Highlight on clicked sidebar/filter tab
+            const container = a.closest('.scrollbar-none, nav');
+            if (container) {
+                container.querySelectorAll('a').forEach(item => {
+                    item.classList.remove('bg-gradient-to-r', 'from-pink-600', 'to-rose-500', 'text-white', 'shadow-md', 'shadow-pink-200/80', 'ring-2', 'ring-pink-500/30', 'translate-x-1');
+                    item.classList.add('bg-white', 'text-slate-600');
+                });
+                a.classList.remove('bg-white', 'text-slate-600');
+                a.classList.add('bg-gradient-to-r', 'from-pink-600', 'to-rose-500', 'text-white', 'shadow-md', 'shadow-pink-200/80');
+            }
+
+            // 0ms Instant Glassmorphism Skeleton Blur Overlay on main content
+            const main = document.querySelector('main');
+            if (main && !main.querySelector('.instant-skeleton-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.className = 'instant-skeleton-overlay absolute inset-0 bg-white/70 backdrop-blur-sm z-40 flex flex-col items-center justify-center gap-3 transition-all duration-200 animate-pulse min-h-[300px]';
+                overlay.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 flex items-center justify-center text-white text-xl shadow-lg shadow-pink-500/30 animate-spin">
+                        <i class="fa-solid fa-spinner"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-700 bg-white/90 px-3 py-1 rounded-full shadow-sm border border-pink-100">Đang cập nhật thông tin...</span>
+                `;
+                main.classList.add('relative');
+                main.appendChild(overlay);
+            }
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>

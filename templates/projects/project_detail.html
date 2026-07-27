@@ -637,11 +637,14 @@
             const content = document.getElementById('tabContent-' + t);
             const btn = document.getElementById('tabBtn-' + t);
             if (t === tabName) {
-                if (content) content.classList.remove('hidden');
-                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-md shadow-pink-200/80";
+                if (content) {
+                    content.classList.remove('hidden');
+                    content.classList.add('transition-opacity', 'duration-200', 'opacity-100');
+                }
+                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-md shadow-pink-200/80 scale-105";
             } else {
                 if (content) content.classList.add('hidden');
-                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-pink-50 hover:text-pink-700 border border-slate-200";
+                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 bg-white text-slate-600 hover:bg-pink-50 hover:text-pink-700 border border-slate-200";
             }
         });
         localStorage.setItem('activeProjectTab_{{ project.id }}', tabName);
