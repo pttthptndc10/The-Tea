@@ -915,6 +915,102 @@
     }
 
     function createBlankTaskCardAjax() {
+        const todoSection = document.getElementById('section_todo_tasks');
+        if (!todoSection) return;
+
+        const tempId = 'temp_' + Date.now();
+        const defaultStartDate = '{{ project.start_date|date:"Y-m-d" }}';
+        const defaultEndDate = '{{ project.end_date|date:"Y-m-d" }}';
+        const projectName = '{{ project.name|truncatechars:20|escapejs }}';
+
+        const cardHtml = `
+        <div id="task_card_${tempId}" class="task-card-item bg-white rounded-2xl border border-pink-300 p-5 shadow-md space-y-3 transition relative" data-id="${tempId}" data-status="TODO">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <button type="button" 
+                        onclick="toggleTaskStatusAjax('${tempId}')" 
+                        id="task_checkbox_${tempId}"
+                        class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 hover:border-pink-500 bg-white text-transparent" 
+                        data-status="TODO"
+                        title="Đánh dấu hoàn thành">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-100 text-pink-800 flex-shrink-0">
+                            ${projectName}
+                        </span>
+                        <input type="text" 
+                            id="task_title_input_${tempId}"
+                            class="task-card-auto-save font-bold text-sm text-slate-900 border-b border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
+                            data-id="${tempId}" 
+                            data-field="title" 
+                            value="Công việc mới">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span id="task_save_status_${tempId}" class="text-[11px] font-medium text-pink-500 italic"><i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đang tạo...</span>
+
+                    <button type="button" onclick="cancelTaskAjax('${tempId}')" class="cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
+                        Hủy bỏ
+                    </button>
+
+                    <button type="button" onclick="deleteTaskAjax('${tempId}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-xs text-slate-500 pl-8 space-y-1">
+                <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng):</p>
+                <textarea rows="1"
+                    class="task-card-auto-save auto-expand-textarea italic text-slate-700 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
+                    data-id="${tempId}" 
+                    data-field="notes" 
+                    placeholder="Nhập ghi chú công việc..."></textarea>
+            </div>
+
+            <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
+                <div class="flex items-center gap-4 flex-wrap w-full justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-semibold">Chỉ định:</span>
+                        <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
+                            data-id="${tempId}" 
+                            data-field="assignee">
+                            <option value="">-- Chưa giao --</option>
+                            {% for m in members %}
+                            <option value="{{ m.id }}">{{ m.full_name|default:m.email }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-3 font-mono text-[11px]">
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-400">Bắt đầu:</span>
+                            <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${tempId}" data-field="start_date" value="${defaultStartDate}">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-400">Kết thúc:</span>
+                            <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${tempId}" data-field="end_date" value="${defaultEndDate}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        todoSection.insertAdjacentHTML('afterbegin', cardHtml);
+        updateSectionTaskCounts();
+
+        const tempCard = document.getElementById('task_card_' + tempId);
+        if (tempCard) attachAutoSaveListeners(tempCard);
+
+        const titleInput = document.getElementById('task_title_input_' + tempId);
+        if (titleInput) {
+            titleInput.focus();
+            titleInput.select();
+        }
+
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
@@ -928,94 +1024,39 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                const todoSection = document.getElementById('section_todo_tasks');
-                if (!todoSection) return;
+                const realId = data.task_id;
+                if (tempCard) {
+                    tempCard.id = 'task_card_' + realId;
+                    tempCard.setAttribute('data-id', realId);
 
-                const cardHtml = `
-                <div id="task_card_${data.task_id}" class="task-card-item bg-white rounded-2xl border border-pink-300 p-5 shadow-md space-y-3 transition relative" data-id="${data.task_id}" data-status="TODO">
-                    <div class="flex items-center justify-between gap-3 flex-wrap">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <button type="button" 
-                                onclick="toggleTaskStatusAjax('${data.task_id}')" 
-                                id="task_checkbox_${data.task_id}"
-                                class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 hover:border-pink-500 bg-white text-transparent" 
-                                data-status="TODO"
-                                title="Đánh dấu hoàn thành">
-                                <i class="fa-solid fa-check"></i>
-                            </button>
+                    const checkbox = document.getElementById('task_checkbox_' + tempId);
+                    if (checkbox) {
+                        checkbox.id = 'task_checkbox_' + realId;
+                        checkbox.setAttribute('onclick', "toggleTaskStatusAjax('" + realId + "')");
+                    }
 
-                            <div class="flex items-center gap-2 flex-1 min-w-0">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-100 text-pink-800 flex-shrink-0">
-                                    ${data.project_name}
-                                </span>
-                                <input type="text" 
-                                    id="task_title_input_${data.task_id}"
-                                    class="task-card-auto-save font-bold text-sm text-slate-900 border-b border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
-                                    data-id="${data.task_id}" 
-                                    data-field="title" 
-                                    value="${data.title}">
-                            </div>
-                        </div>
+                    const tInput = document.getElementById('task_title_input_' + tempId);
+                    if (tInput) {
+                        tInput.id = 'task_title_input_' + realId;
+                        tInput.setAttribute('data-id', realId);
+                    }
 
-                        <div class="flex items-center gap-3">
-                            <span id="task_save_status_${data.task_id}" class="text-[11px] font-medium text-slate-400 italic"></span>
+                    const statusInd = document.getElementById('task_save_status_' + tempId);
+                    if (statusInd) {
+                        statusInd.id = 'task_save_status_' + realId;
+                        statusInd.innerHTML = '<i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đã lưu';
+                        setTimeout(() => { statusInd.innerText = ''; }, 2000);
+                    }
 
-                            <button type="button" onclick="cancelTaskAjax('${data.task_id}')" class="cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
-                                Hủy bỏ
-                            </button>
+                    tempCard.querySelectorAll('[data-id="' + tempId + '"]').forEach(el => {
+                        el.setAttribute('data-id', realId);
+                    });
 
-                            <button type="button" onclick="deleteTaskAjax('${data.task_id}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
+                    const cancelBtn = tempCard.querySelector('.cancel-action-btn');
+                    if (cancelBtn) cancelBtn.setAttribute('onclick', "cancelTaskAjax('" + realId + "')");
 
-                    <div class="text-xs text-slate-500 pl-8 space-y-1">
-                        <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng):</p>
-                        <textarea rows="1"
-                            class="task-card-auto-save auto-expand-textarea italic text-slate-700 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
-                            data-id="${data.task_id}" 
-                            data-field="notes" 
-                            placeholder="Nhập ghi chú công việc..."></textarea>
-                    </div>
-
-                    <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
-                        <div class="flex items-center gap-4 flex-wrap w-full justify-between">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-slate-400 font-semibold">Chỉ định:</span>
-                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
-                                    data-id="${data.task_id}" 
-                                    data-field="assignee">
-                                    <option value="">-- Chưa giao --</option>
-                                    {% for m in members %}
-                                    <option value="{{ m.id }}">{{ m.full_name|default:m.email }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="flex items-center gap-3 font-mono text-[11px]">
-                                <div class="flex items-center gap-1">
-                                    <span class="text-slate-400">Bắt đầu:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${data.task_id}" data-field="start_date" value="${data.start_date}">
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <span class="text-slate-400">Kết thúc:</span>
-                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${data.task_id}" data-field="end_date" value="${data.end_date}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-
-                todoSection.insertAdjacentHTML('afterbegin', cardHtml);
-                updateSectionTaskCounts();
-                const newCard = document.getElementById('task_card_' + data.task_id);
-                if (newCard) attachAutoSaveListeners(newCard);
-
-                const titleInput = document.getElementById('task_title_input_' + data.task_id);
-                if (titleInput) {
-                    titleInput.focus();
-                    titleInput.select();
+                    const delBtn = tempCard.querySelector('button[title="Xóa hẳn"]');
+                    if (delBtn) delBtn.setAttribute('onclick', "deleteTaskAjax('" + realId + "')");
                 }
             }
         });
