@@ -227,12 +227,9 @@
                             {% endif %}
 
                             {% if user.role == 'ADMIN' or project.manager == user %}
-                            <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" onclick="return confirm('Xóa hẳn task này?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
-                                    <i class="fa-solid fa-trash-can text-sm"></i>
-                                </button>
-                            </form>
+                            <button type="button" onclick="deleteTaskAjax('{{ t.id }}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -330,12 +327,9 @@
                             {% endif %}
 
                             {% if user.role == 'ADMIN' or project.manager == user %}
-                            <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" onclick="return confirm('Xóa hẳn task này?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
-                                    <i class="fa-solid fa-trash-can text-sm"></i>
-                                </button>
-                            </form>
+                            <button type="button" onclick="deleteTaskAjax('{{ t.id }}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -414,12 +408,9 @@
                             {% endif %}
 
                             {% if user.role == 'ADMIN' or project.manager == user %}
-                            <form method="POST" action="{% url 'tasks:delete' t.id %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" onclick="return confirm('Xóa hẳn task này khỏi hệ thống?')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
-                                    <i class="fa-solid fa-trash-can text-sm"></i>
-                                </button>
-                            </form>
+                            <button type="button" onclick="deleteTaskAjax('{{ t.id }}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -874,16 +865,185 @@
         const completedContainer = document.getElementById('section_completed_tasks');
         const cancelledContainer = document.getElementById('section_cancelled_tasks');
 
+        const todoCount = todoContainer ? todoContainer.querySelectorAll('.task-card-item').length : 0;
+        const completedCount = completedContainer ? completedContainer.querySelectorAll('.task-card-item').length : 0;
+        const cancelledCount = cancelledContainer ? cancelledContainer.querySelectorAll('.task-card-item').length : 0;
+
         const todoDisplay = document.getElementById('todoTaskCountDisplay');
         const completedDisplay = document.getElementById('completedTaskCountDisplay');
         const cancelledDisplay = document.getElementById('cancelledTaskCountDisplay');
 
-        if (todoDisplay && todoContainer) todoDisplay.innerText = todoContainer.querySelectorAll('.task-card-item').length;
-        if (completedDisplay && completedContainer) completedDisplay.innerText = completedContainer.querySelectorAll('.task-card-item').length;
-        if (cancelledDisplay && cancelledContainer) cancelledDisplay.innerText = cancelledContainer.querySelectorAll('.task-card-item').length;
+        if (todoDisplay) todoDisplay.innerText = todoCount;
+        if (completedDisplay) completedDisplay.innerText = completedCount;
+        if (cancelledDisplay) cancelledDisplay.innerText = cancelledCount;
+
+        // Instant progress bar computation (0ms)
+        const totalCount = todoCount + completedCount;
+        let percentage = 0;
+        if (totalCount > 0) {
+            percentage = Math.round((completedCount / totalCount) * 100);
+        }
+        updateProjectProgressBarUI(percentage);
+    }
+
+    function attachAutoSaveListeners(container) {
+        container.querySelectorAll('.task-card-auto-save').forEach(element => {
+            if (element.tagName === 'SELECT' || element.type === 'date') {
+                element.addEventListener('change', function() {
+                    const taskId = this.getAttribute('data-id');
+                    performTaskAutoSave(taskId);
+                });
+            } else {
+                element.addEventListener('input', function() {
+                    const taskId = this.getAttribute('data-id');
+                    const statusIndicator = document.getElementById('task_save_status_' + taskId);
+                    if (statusIndicator) {
+                        statusIndicator.innerHTML = '<i class="fa-solid fa-pencil text-amber-500 mr-1"></i> Đang gõ...';
+                    }
+
+                    clearTimeout(taskCardSaveTimeouts[taskId]);
+                    taskCardSaveTimeouts[taskId] = setTimeout(() => {
+                        performTaskAutoSave(taskId);
+                    }, 200);
+                });
+
+                element.addEventListener('blur', function() {
+                    const taskId = this.getAttribute('data-id');
+                    clearTimeout(taskCardSaveTimeouts[taskId]);
+                    performTaskAutoSave(taskId);
+                });
+            }
+        });
+
+        container.querySelectorAll('.auto-expand-textarea').forEach(textarea => {
+            autoResizeTextarea(textarea);
+            textarea.addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+        });
+    }
+
+    function createBlankTaskCardAjax() {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'tasks:quick_create_blank_api' project.id %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const todoSection = document.getElementById('section_todo_tasks');
+                if (!todoSection) return;
+
+                const cardHtml = `
+                <div id="task_card_${data.task_id}" class="task-card-item bg-white rounded-2xl border border-pink-300 p-5 shadow-md space-y-3 transition relative" data-id="${data.task_id}" data-status="TODO">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <button type="button" 
+                                onclick="toggleTaskStatusAjax('${data.task_id}')" 
+                                id="task_checkbox_${data.task_id}"
+                                class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 hover:border-pink-500 bg-white text-transparent" 
+                                data-status="TODO"
+                                title="Đánh dấu hoàn thành">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-pink-100 text-pink-800 flex-shrink-0">
+                                    ${data.project_name}
+                                </span>
+                                <input type="text" 
+                                    id="task_title_input_${data.task_id}"
+                                    class="task-card-auto-save font-bold text-sm text-slate-900 border-b border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
+                                    data-id="${data.task_id}" 
+                                    data-field="title" 
+                                    value="${data.title}">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <span id="task_save_status_${data.task_id}" class="text-[11px] font-medium text-slate-400 italic"></span>
+
+                            <button type="button" onclick="cancelTaskAjax('${data.task_id}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition" title="Chuyển sang Đã Hủy">
+                                Hủy bỏ
+                            </button>
+
+                            <button type="button" onclick="deleteTaskAjax('${data.task_id}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Xóa hẳn">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-500 pl-8 space-y-1">
+                        <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng):</p>
+                        <textarea rows="1"
+                            class="task-card-auto-save auto-expand-textarea italic text-slate-700 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
+                            data-id="${data.task_id}" 
+                            data-field="notes" 
+                            placeholder="Nhập ghi chú công việc..."></textarea>
+                    </div>
+
+                    <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
+                        <div class="flex items-center gap-4 flex-wrap w-full justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-semibold">Chỉ định:</span>
+                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
+                                    data-id="${data.task_id}" 
+                                    data-field="assignee">
+                                    <option value="">-- Chưa giao --</option>
+                                    {% for m in members %}
+                                    <option value="{{ m.id }}">{{ m.full_name|default:m.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="flex items-center gap-3 font-mono text-[11px]">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400">Bắt đầu:</span>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${data.task_id}" data-field="start_date" value="${data.start_date}">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400">Kết thúc:</span>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="${data.task_id}" data-field="end_date" value="${data.end_date}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                todoSection.insertAdjacentHTML('afterbegin', cardHtml);
+                updateSectionTaskCounts();
+                const newCard = document.getElementById('task_card_' + data.task_id);
+                if (newCard) attachAutoSaveListeners(newCard);
+
+                const titleInput = document.getElementById('task_title_input_' + data.task_id);
+                if (titleInput) {
+                    titleInput.focus();
+                    titleInput.select();
+                }
+            }
+        });
     }
 
     function cancelTaskAjax(taskId) {
+        const card = document.getElementById('task_card_' + taskId);
+        if (!card) return;
+
+        const cancelledSection = document.getElementById('section_cancelled_tasks');
+        if (cancelledSection) {
+            cancelledSection.prepend(card);
+            card.className = "task-card-item bg-slate-50/90 rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 opacity-80 transition";
+            card.setAttribute('data-status', 'CANCELLED');
+            const titleInput = card.querySelector('[data-field="title"]');
+            if (titleInput) titleInput.classList.add('line-through', 'text-slate-400');
+        }
+        updateSectionTaskCounts();
+
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
@@ -899,12 +1059,24 @@
         .then(data => {
             if (data.status === 'success') {
                 updateProjectProgressBarUI(data.progress_percentage);
-                window.location.reload();
             }
         });
     }
 
     function restoreTaskAjax(taskId) {
+        const card = document.getElementById('task_card_' + taskId);
+        if (!card) return;
+
+        const todoSection = document.getElementById('section_todo_tasks');
+        if (todoSection) {
+            todoSection.prepend(card);
+            card.className = "task-card-item bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3 hover:border-pink-300 transition relative";
+            card.setAttribute('data-status', 'TODO');
+            const titleInput = card.querySelector('[data-field="title"]');
+            if (titleInput) titleInput.classList.remove('line-through', 'text-slate-400');
+        }
+        updateSectionTaskCounts();
+
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
@@ -920,7 +1092,34 @@
         .then(data => {
             if (data.status === 'success') {
                 updateProjectProgressBarUI(data.progress_percentage);
-                window.location.reload();
+            }
+        });
+    }
+
+    function deleteTaskAjax(taskId) {
+        if (!confirm('Xóa hẳn công việc này khỏi hệ thống?')) return;
+        
+        const card = document.getElementById('task_card_' + taskId);
+        if (card) {
+            card.remove();
+        }
+        updateSectionTaskCounts();
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/tasks/' + taskId + '/delete/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateProjectProgressBarUI(data.progress_percentage);
             }
         });
     }

@@ -15,4 +15,5 @@ urlpatterns = [
     path('<uuid:task_id>/inline-edit/', views.task_inline_edit_view, name='inline_edit'),
     path('api/auto-save/', views.task_auto_save_api, name='auto_save_api'),
     path('project/<uuid:project_id>/quick-create/', views.task_quick_create_view, name='quick_create'),
+    path('project/<uuid:project_id>/quick-create-blank/', views.task_quick_create_blank_api, name='quick_create_blank_api'),
 ]

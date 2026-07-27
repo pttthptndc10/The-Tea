@@ -218,18 +218,62 @@ def task_restore_view(request, task_id):
 @require_POST
 def task_delete_view(request, task_id):
     """
-    Delete task (with confirmation).
+    Delete task with AJAX JSON support.
     """
     task = get_object_or_404(Task, id=task_id)
     if not request.user.is_admin() and task.project.manager != request.user:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
         messages.error(request, "Chỉ Admin hoặc Manager dự án mới có quyền xóa hẳn task.")
         return redirect('tasks:detail', task_id=task.id)
 
-    project_id = task.project.id
+    project = task.project
     title = task.title
     task.delete()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({
+            'status': 'success',
+            'task_id': str(task_id),
+            'progress_percentage': project.get_progress_percentage()
+        })
+
     messages.success(request, f"Đã xóa nhiệm vụ '{title}'.")
-    return redirect('projects:detail', project_id=project_id)
+    return redirect('projects:detail', project_id=project.id)
+
+
+@login_required
+@require_POST
+def task_quick_create_blank_api(request, project_id):
+    """
+    Instant 1-click creation of a blank task card on the project checklist.
+    """
+    project = get_object_or_404(Project, id=project_id)
+    if not ProjectService.user_can_edit(request.user, project):
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền'}, status=403)
+
+    task = Task.objects.create(
+        project=project,
+        title="Công việc mới",
+        notes="",
+        start_date=project.start_date,
+        end_date=project.end_date,
+        priority=Task.Priority.MEDIUM,
+        status=Task.Status.TODO,
+        created_by=request.user
+    )
+
+    return JsonResponse({
+        'status': 'success',
+        'task_id': str(task.id),
+        'title': task.title,
+        'notes': task.notes,
+        'start_date': task.start_date.strftime('%Y-%m-%d'),
+        'end_date': task.end_date.strftime('%Y-%m-%d'),
+        'project_name': project.name[:20],
+        'progress_percentage': project.get_progress_percentage()
+    })
+
 
 
 @login_required
