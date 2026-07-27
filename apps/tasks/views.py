@@ -314,6 +314,7 @@ def task_auto_save_api(request):
                 'status': 'success',
                 'title': task.title,
                 'notes': task.notes,
+                'progress_percentage': task.project.get_progress_percentage(),
                 'message': 'Đã lưu'
             })
         

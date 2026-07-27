@@ -73,10 +73,10 @@
         <div class="space-y-1.5 pt-1">
             <div class="flex items-center justify-between text-xs font-semibold">
                 <span class="text-slate-500 uppercase tracking-wider text-[11px]">Tiến độ dự án</span>
-                <span class="text-brand-700 font-bold text-sm">{{ progress }}%</span>
+                <span id="projectProgressText" class="text-pink-600 font-bold text-sm">{{ progress }}%</span>
             </div>
-            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ progress }}%;"></div>
+            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div id="projectProgressBar" class="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full transition-all duration-500" style="width: {{ progress }}%;"></div>
             </div>
         </div>
         {% endwith %}
@@ -616,6 +616,15 @@
     // Instant Auto Save for Task Cards
     let taskCardSaveTimeouts = {};
 
+    function updateProjectProgressBarUI(percentage) {
+        if (percentage !== undefined && percentage !== null) {
+            const progressText = document.getElementById('projectProgressText');
+            const progressBar = document.getElementById('projectProgressBar');
+            if (progressText) progressText.innerText = percentage + '%';
+            if (progressBar) progressBar.style.width = percentage + '%';
+        }
+    }
+
     function performTaskAutoSave(taskId) {
         const statusIndicator = document.getElementById('task_save_status_' + taskId);
 
@@ -656,6 +665,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
+                updateProjectProgressBarUI(data.progress_percentage);
                 if (statusIndicator) {
                     statusIndicator.innerHTML = '<i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đã lưu';
                     setTimeout(() => {
@@ -738,6 +748,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
+                updateProjectProgressBarUI(data.progress_percentage);
                 const statusIndicator = document.getElementById('task_save_status_' + taskId);
                 if (statusIndicator) {
                     statusIndicator.innerHTML = '<i class="fa-solid fa-bolt text-pink-600 mr-1"></i> Đã lưu';
