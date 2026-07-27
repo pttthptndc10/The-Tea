@@ -16,7 +16,7 @@ def project_list_view(request):
     status_filter = request.GET.get('status', 'ALL')
     query = request.GET.get('q', '').strip()
 
-    projects = Project.objects.all().select_related('manager', 'created_by').order_by('-created_at')
+    projects = Project.objects.all().select_related('manager', 'created_by').prefetch_related('tasks').order_by('-created_at')
 
     # Status tab filtering
     if status_filter == 'UNMANAGED':

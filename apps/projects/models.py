@@ -69,10 +69,19 @@ class Project(models.Model):
         Calculates progress percentage = (Completed Tasks / Total Tasks) * 100
         Cancelled tasks count towards total tasks but NOT towards completed tasks.
         Example: 4 total tasks (2 completed, 2 cancelled) => 2/4 = 50%.
+        Optimized for prefetched in-memory tasks to prevent N+1 SQL queries.
         """
         if not hasattr(self, 'tasks'):
             return 100 if self.status == self.Status.COMPLETED else 0
         try:
+            if hasattr(self, '_prefetched_objects_cache') and 'tasks' in self._prefetched_objects_cache:
+                tasks_list = self._prefetched_objects_cache['tasks']
+                total = len(tasks_list)
+                if total == 0:
+                    return 100 if self.status == self.Status.COMPLETED else 0
+                completed = sum(1 for t in tasks_list if t.status == 'COMPLETED')
+                return round((completed / total) * 100)
+            
             total = self.tasks.count()
             if total == 0:
                 return 100 if self.status == self.Status.COMPLETED else 0
