@@ -812,14 +812,20 @@
             checkbox.setAttribute('data-status', 'COMPLETED');
             const completedSection = document.getElementById('section_completed_tasks');
             const card = checkbox.closest('.task-card-item');
-            if (completedSection && card) completedSection.appendChild(card);
+            if (completedSection && card) {
+                completedSection.appendChild(card);
+                setCardEditability(card, false);
+            }
         } else {
             checkbox.className = "w-5 h-5 rounded border-2 border-slate-300 hover:border-pink-500 bg-white text-transparent flex items-center justify-center text-xs shadow-sm transition";
             if (titleInput) titleInput.classList.remove('line-through', 'text-slate-400');
             checkbox.setAttribute('data-status', 'TODO');
             const todoSection = document.getElementById('section_todo_tasks');
             const card = checkbox.closest('.task-card-item');
-            if (todoSection && card) todoSection.appendChild(card);
+            if (todoSection && card) {
+                todoSection.appendChild(card);
+                setCardEditability(card, true);
+            }
         }
         updateSectionTaskCounts();
 
@@ -851,6 +857,26 @@
         });
     }
 
+    function setCardEditability(card, editable) {
+        if (!card) return;
+        card.querySelectorAll('input[data-field], textarea[data-field]').forEach(input => {
+            input.readOnly = !editable;
+            if (!editable) {
+                input.classList.add('cursor-not-allowed');
+            } else {
+                input.classList.remove('cursor-not-allowed');
+            }
+        });
+        card.querySelectorAll('select[data-field]').forEach(select => {
+            select.disabled = !editable;
+            if (!editable) {
+                select.classList.add('cursor-not-allowed', 'opacity-70');
+            } else {
+                select.classList.remove('cursor-not-allowed', 'opacity-70');
+            }
+        });
+    }
+
     function updateSectionTaskCounts() {
         const todoContainer = document.getElementById('section_todo_tasks');
         const completedContainer = document.getElementById('section_completed_tasks');
@@ -868,8 +894,8 @@
         if (completedDisplay) completedDisplay.innerText = completedCount;
         if (cancelledDisplay) cancelledDisplay.innerText = cancelledCount;
 
-        // Instant progress bar computation (0ms)
-        const totalCount = todoCount + completedCount;
+        // Total count includes cancelled tasks (e.g. 2 completed / 4 total = 50%)
+        const totalCount = todoCount + completedCount + cancelledCount;
         let percentage = 0;
         if (totalCount > 0) {
             percentage = Math.round((completedCount / totalCount) * 100);
@@ -1073,8 +1099,9 @@
             card.setAttribute('data-status', 'CANCELLED');
             const titleInput = card.querySelector('[data-field="title"]');
             if (titleInput) titleInput.classList.add('line-through', 'text-slate-400');
+            setCardEditability(card, false);
 
-            const actionBtn = card.querySelector('.cancel-action-btn');
+            const actionBtn = card.querySelector('button[onclick*="cancelTaskAjax"]') || card.querySelector('.cancel-action-btn');
             if (actionBtn) {
                 actionBtn.setAttribute('onclick', "restoreTaskAjax('" + taskId + "')");
                 actionBtn.className = "cancel-action-btn px-3.5 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5";
@@ -1112,6 +1139,7 @@
             todoSection.prepend(card);
             card.className = "task-card-item bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3 hover:border-pink-300 transition relative";
             card.setAttribute('data-status', 'TODO');
+            setCardEditability(card, true);
 
             const titleInput = document.getElementById('task_title_input_' + taskId) || card.querySelector('[data-field="title"]');
             if (titleInput) {

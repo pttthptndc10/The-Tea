@@ -67,15 +67,16 @@ class Project(models.Model):
     def get_progress_percentage(self):
         """
         Calculates progress percentage = (Completed Tasks / Total Tasks) * 100
+        Cancelled tasks count towards total tasks but NOT towards completed tasks.
+        Example: 4 total tasks (2 completed, 2 cancelled) => 2/4 = 50%.
         """
         if not hasattr(self, 'tasks'):
             return 100 if self.status == self.Status.COMPLETED else 0
         try:
-            tasks = self.tasks.exclude(status='CANCELLED') # Exclude cancelled tasks from progress
-            total = tasks.count()
+            total = self.tasks.count()
             if total == 0:
                 return 100 if self.status == self.Status.COMPLETED else 0
-            completed = tasks.filter(status='COMPLETED').count()
+            completed = self.tasks.filter(status='COMPLETED').count()
             return round((completed / total) * 100)
         except Exception:
             return 100 if self.status == self.Status.COMPLETED else 0
