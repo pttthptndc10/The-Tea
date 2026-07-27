@@ -392,17 +392,34 @@
                 <div id="task_card_{{ t.id }}" class="task-card-item bg-slate-50/90 rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 opacity-80" data-id="{{ t.id }}" data-status="CANCELLED">
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-600 flex-shrink-0">
-                                {{ project.name|truncatechars:20 }}
-                            </span>
-                            <span class="font-bold text-sm text-slate-500 line-through truncate">
-                                {{ t.title }}
-                            </span>
+                            <button type="button" 
+                                onclick="toggleTaskStatusAjax('{{ t.id }}')" 
+                                id="task_checkbox_{{ t.id }}"
+                                class="w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 bg-white text-transparent" 
+                                data-status="CANCELLED"
+                                title="Đánh dấu hoàn thành">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-600 flex-shrink-0">
+                                    {{ project.name|truncatechars:20 }}
+                                </span>
+                                <input type="text" 
+                                    id="task_title_input_{{ t.id }}"
+                                    class="task-card-auto-save font-bold text-sm text-slate-400 line-through border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full" 
+                                    data-id="{{ t.id }}" 
+                                    data-field="title" 
+                                    value="{{ t.title }}" 
+                                    {% if not can_edit %}readonly{% endif %}>
+                            </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3">
+                            <span id="task_save_status_{{ t.id }}" class="text-[11px] font-medium text-slate-400 italic"></span>
+
                             {% if can_edit %}
-                            <button type="button" onclick="restoreTaskAjax('{{ t.id }}')" class="px-3.5 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5">
+                            <button type="button" onclick="restoreTaskAjax('{{ t.id }}')" class="cancel-action-btn px-3.5 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5" title="Khôi phục công việc">
                                 <i class="fa-solid fa-rotate-left"></i> Khôi phục
                             </button>
                             {% endif %}
@@ -415,11 +432,45 @@
                         </div>
                     </div>
 
-                    {% if t.notes %}
-                    <div class="text-xs text-slate-500 pl-4 italic">
-                        {{ t.notes }}
+                    <div class="text-xs text-slate-500 pl-8 space-y-1">
+                        <p class="font-semibold text-slate-400 text-[11px]">Ghi chú công việc (Enter để xuống dòng):</p>
+                        <textarea rows="1"
+                            class="task-card-auto-save auto-expand-textarea italic text-slate-500 border-b border-transparent hover:border-pink-300 focus:border-pink-500 focus:bg-pink-50/40 focus:outline-none px-2 py-1 rounded-lg transition w-full text-xs resize-none overflow-hidden leading-normal" 
+                            data-id="{{ t.id }}" 
+                            data-field="notes" 
+                            placeholder="Nhập ghi chú công việc..." 
+                            {% if not can_edit %}readonly{% endif %}>{{ t.notes }}</textarea>
                     </div>
-                    {% endif %}
+
+                    <div class="pl-8 flex items-center justify-between gap-4 text-xs text-slate-500 flex-wrap pt-2 border-t border-slate-100">
+                        <div class="flex items-center gap-4 flex-wrap w-full justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-semibold">Chỉ định:</span>
+                                <select class="task-card-auto-save px-2.5 py-1 rounded-lg border border-pink-200 text-xs font-semibold bg-pink-50 text-pink-800 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer"
+                                    data-id="{{ t.id }}" 
+                                    data-field="assignee"
+                                    {% if not can_edit %}disabled{% endif %}>
+                                    <option value="">-- Chưa giao --</option>
+                                    {% for m in members %}
+                                    <option value="{{ m.id }}" {% if m.id in t.get_assignee_user_ids %}selected{% endif %}>
+                                        {{ m.full_name|default:m.email }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="flex items-center gap-3 font-mono text-[11px]">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400">Bắt đầu:</span>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="start_date" value="{{ t.start_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400">Kết thúc:</span>
+                                    <input type="date" class="task-card-auto-save px-2 py-0.5 rounded-md border border-slate-200 text-[11px] focus:ring-1 focus:ring-pink-500 font-semibold text-slate-700 bg-white" data-id="{{ t.id }}" data-field="end_date" value="{{ t.end_date|date:'Y-m-d' }}" {% if not can_edit %}readonly{% endif %}>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -1080,10 +1131,26 @@
             todoSection.prepend(card);
             card.className = "task-card-item bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3 hover:border-pink-300 transition relative";
             card.setAttribute('data-status', 'TODO');
-            const titleInput = card.querySelector('[data-field="title"]');
-            if (titleInput) titleInput.classList.remove('line-through', 'text-slate-400');
 
-            const actionBtn = card.querySelector('.cancel-action-btn');
+            const titleInput = document.getElementById('task_title_input_' + taskId) || card.querySelector('[data-field="title"]');
+            if (titleInput) {
+                titleInput.classList.remove('line-through', 'text-slate-400', 'text-slate-500');
+                titleInput.classList.add('text-slate-900');
+            }
+
+            const checkbox = document.getElementById('task_checkbox_' + taskId);
+            if (checkbox) {
+                checkbox.className = "w-5 h-5 rounded border-2 transition shadow-sm flex items-center justify-center text-xs border-slate-300 hover:border-pink-500 bg-white text-transparent";
+                checkbox.setAttribute('data-status', 'TODO');
+            }
+
+            const notesInput = card.querySelector('[data-field="notes"]');
+            if (notesInput) {
+                notesInput.classList.remove('text-slate-400');
+                notesInput.classList.add('text-slate-700');
+            }
+
+            const actionBtn = card.querySelector('button[onclick*="restoreTaskAjax"]') || card.querySelector('.cancel-action-btn');
             if (actionBtn) {
                 actionBtn.setAttribute('onclick', "cancelTaskAjax('" + taskId + "')");
                 actionBtn.className = "cancel-action-btn px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition";
