@@ -530,6 +530,43 @@
             </div>
             {% endif %}
 
+            <!-- Section: Gửi linh kiện vào đợt gom hàng chung (Matching Spec Image) -->
+            <div class="mt-6 p-6 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-3 border-b border-slate-800 pb-3">
+                    <h4 class="font-bold text-sm text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-packing text-cyan-400"></i>
+                        <span>Gửi linh kiện vào đợt gom hàng chung</span>
+                    </h4>
+                    <div class="px-3.5 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-mono font-bold text-cyan-300">
+                        Tổng phiên: <span id="sessionTotalDisplay">{{ current_session_total|default:"0"|floatformat:0 }} đ</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-medium text-slate-400">Chọn phiên gom hàng đang mở</label>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <select id="openSessionSelect" class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            {% for s in open_sessions %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% empty %}
+                            <option value="">(Không có phiên gom hàng nào đang mở)</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" onclick="submitProjectToSessionAjax(event)" class="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Đưa vào hàng chờ gộp</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-1 text-xs">
+                    <a href="{% url 'purchases:list' %}" class="text-slate-400 hover:text-cyan-400 transition font-medium flex items-center gap-1">
+                        <span>Đến tab Phiên mua sắm để xem các phiên gom hàng</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -838,6 +875,49 @@
                 body: formData
             });
         }
+    }
+
+    function submitProjectToSessionAjax(event) {
+        const select = document.getElementById('openSessionSelect');
+        if (!select || !select.value) {
+            alert('Vui lòng chọn một phiên gom hàng đang mở.');
+            return;
+        }
+
+        const sessionId = select.value;
+        const btn = event.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang gửi...';
+        btn.disabled = true;
+
+        fetch(`/purchases/add-project/{{ project.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                session_id: sessionId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            if (data.status === 'success') {
+                const totalDisplay = document.getElementById('sessionTotalDisplay');
+                if (totalDisplay) totalDisplay.innerText = data.session_total.toLocaleString('vi-VN') + ' đ';
+                alert(data.message);
+            } else {
+                alert(data.message || 'Lỗi gửi vào phiên.');
+            }
+        })
+        .catch(err => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            alert('Lỗi kết nối máy chủ.');
+        });
     }
 
     // Instant Auto Save for Task Cards

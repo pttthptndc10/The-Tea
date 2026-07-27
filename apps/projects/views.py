@@ -58,6 +58,12 @@ def project_detail_view(request, project_id):
     components = project.components.all().order_by('-created_at')
     total_components_cost = components.aggregate(Sum('total_price'))['total_price__sum'] or 0
 
+    # Fetch Purchase Sessions
+    from apps.purchases.models import PurchaseSession, PurchaseSessionProject
+    open_sessions = PurchaseSession.objects.filter(status='OPEN').order_by('-created_at')
+    first_session = open_sessions.first()
+    current_session_total = first_session.get_total_amount() if first_session else 0
+
     context = {
         'project': project,
         'can_edit': can_edit,
@@ -69,6 +75,8 @@ def project_detail_view(request, project_id):
         'cancelled_tasks': cancelled_tasks,
         'components': components,
         'total_components_cost': total_components_cost,
+        'open_sessions': open_sessions,
+        'current_session_total': current_session_total,
         'assign_form': AssignManagerForm(),
         'active_tab': request.GET.get('tab', 'checklist'),
     }
