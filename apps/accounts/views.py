@@ -236,7 +236,7 @@ def members_overview_view(request):
     members = User.objects.filter(status=User.Status.ACTIVE).prefetch_related(
         'managed_projects',
         'project_memberships__project',
-        'task_assignments__task__project'
+        'assigned_tasks__task__project'
     ).order_by('-created_at')
 
     members_data = []
@@ -248,7 +248,7 @@ def members_overview_view(request):
         participated_projs = [pm.project for pm in m.project_memberships.all() if pm.project not in managed_projs]
         all_user_projs = managed_projs + participated_projs
 
-        assigned_tasks = [ta.task for ta in m.task_assignments.select_related('task__project').all()]
+        assigned_tasks = [ta.task for ta in m.assigned_tasks.all()]
 
         members_data.append({
             'user': m,
