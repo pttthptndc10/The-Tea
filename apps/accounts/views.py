@@ -60,28 +60,45 @@ def logout_view(request):
 
 def register_step1_view(request):
     """
-    Registration Step 1: Input Email (must be invited), Password & Confirm Password.
+    Registration Single-Screen View: Handles Email input, OTP request & Single-screen Completion.
     """
     if request.user.is_authenticated:
         return redirect('dashboard:index')
 
     if request.method == 'POST':
-        form = RegisterStep1Form(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email'].lower().strip()
-            full_name = form.cleaned_data['full_name']
-            password = form.cleaned_data['password']
+        email = request.POST.get('email', '').lower().strip()
+        full_name = request.POST.get('full_name', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        otp_code = request.POST.get('otp_code', '').strip()
 
-            success, msg = AuthService.send_registration_otp(email)
+        if otp_code:
+            # Complete registration in single screen
+            if password != confirm_password:
+                messages.error(request, "Mật khẩu xác nhận không trùng khớp.")
+                return render(request, 'accounts/register.html', {'form': RegisterStep1Form(request.POST)})
+
+            success, result = AuthService.verify_registration_otp(
+                email=email,
+                otp_code=otp_code,
+                password=password,
+                full_name=full_name
+            )
             if success:
-                # Store in session for step 2
-                request.session['reg_email'] = email
-                request.session['reg_full_name'] = full_name
-                request.session['reg_password'] = password
-                messages.success(request, msg)
-                return redirect('accounts:register_otp')
+                messages.success(request, "Đăng ký tài khoản thành công! Vui lòng đăng nhập.")
+                return redirect('accounts:login')
             else:
-                messages.error(request, msg)
+                messages.error(request, result)
+        else:
+            form = RegisterStep1Form(request.POST)
+            if form.is_valid():
+                success, msg = AuthService.send_registration_otp(email)
+                if success:
+                    messages.success(request, msg)
+                else:
+                    messages.error(request, msg)
+            else:
+                messages.error(request, "Vui lòng kiểm tra lại thông tin đăng ký.")
     else:
         form = RegisterStep1Form()
 
@@ -90,68 +107,45 @@ def register_step1_view(request):
 
 def register_step2_otp_view(request):
     """
-    Registration Step 2: Input 4-digit OTP code to complete registration.
+    Backwards-compatible redirect for Registration Step 2.
     """
-    if request.user.is_authenticated:
-        return redirect('dashboard:index')
-
-    reg_email = request.session.get('reg_email')
-    reg_password = request.session.get('reg_password')
-    reg_full_name = request.session.get('reg_full_name', '')
-
-    if not reg_email or not reg_password:
-        messages.warning(request, "Vui lòng nhập thông tin đăng ký trước.")
-        return redirect('accounts:register')
-
-    if request.method == 'POST':
-        form = OTPVerifyForm(request.POST)
-        if form.is_valid():
-            otp_code = form.cleaned_data['otp_code']
-            success, result = AuthService.verify_registration_otp(
-                email=reg_email,
-                otp_code=otp_code,
-                password=reg_password,
-                full_name=reg_full_name
-            )
-            if success:
-                # Clear session
-                request.session.pop('reg_email', None)
-                request.session.pop('reg_password', None)
-                request.session.pop('reg_full_name', None)
-
-                messages.success(request, "Đăng ký tài khoản thành công! Vui lòng đăng nhập.")
-                return redirect('accounts:login')
-            else:
-                messages.error(request, result)
-    else:
-        form = OTPVerifyForm()
-
-    return render(request, 'accounts/verify_otp.html', {
-        'form': form,
-        'email': reg_email,
-        'title': 'Xác thực OTP Đăng ký',
-        'subtitle': f'Mã OTP 4 số đã được gửi tới email {reg_email}'
-    })
+    return redirect('accounts:register')
 
 
 def forgot_password_step1_view(request):
     """
-    Forgot Password Step 1: Input Email.
+    Forgot Password Single-Screen View: Handles Email input, OTP request & Single-screen Reset.
     """
     if request.user.is_authenticated:
         return redirect('dashboard:index')
 
     if request.method == 'POST':
-        form = ForgotPasswordForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email'].lower().strip()
-            success, msg = AuthService.send_forgot_password_otp(email)
-            if success:
-                request.session['forgot_email'] = email
-                messages.success(request, msg)
-                return redirect('accounts:forgot_password_otp')
+        email = request.POST.get('email', '').lower().strip()
+        otp_code = request.POST.get('otp_code', '').strip()
+        new_password = request.POST.get('new_password', '')
+
+        if otp_code and new_password:
+            # Single-screen password reset completion
+            v_success, v_msg = AuthService.verify_forgot_password_otp(email, otp_code)
+            if not v_success:
+                messages.error(request, v_msg)
             else:
-                messages.error(request, msg)
+                r_success, r_msg = AuthService.reset_password(email, new_password)
+                if r_success:
+                    messages.success(request, "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.")
+                    return redirect('accounts:login')
+                else:
+                    messages.error(request, r_msg)
+        else:
+            form = ForgotPasswordForm(request.POST)
+            if form.is_valid():
+                success, msg = AuthService.send_forgot_password_otp(email)
+                if success:
+                    messages.success(request, msg)
+                else:
+                    messages.error(request, msg)
+            else:
+                messages.error(request, "Vui lòng nhập Email hợp lệ.")
     else:
         form = ForgotPasswordForm()
 
@@ -160,36 +154,42 @@ def forgot_password_step1_view(request):
 
 def forgot_password_step2_otp_view(request):
     """
-    Forgot Password Step 2: Input 4-digit OTP.
+    Backwards-compatible redirect for Forgot Password Step 2.
     """
-    if request.user.is_authenticated:
-        return redirect('dashboard:index')
+    return redirect('accounts:forgot_password')
 
-    forgot_email = request.session.get('forgot_email')
-    if not forgot_email:
-        messages.warning(request, "Vui lòng nhập Email để quên mật khẩu trước.")
-        return redirect('accounts:forgot_password')
 
-    if request.method == 'POST':
-        form = OTPVerifyForm(request.POST)
-        if form.is_valid():
-            otp_code = form.cleaned_data['otp_code']
-            success, msg = AuthService.verify_forgot_password_otp(forgot_email, otp_code)
-            if success:
-                request.session['forgot_otp_verified'] = True
-                messages.success(request, msg)
-                return redirect('accounts:reset_password')
-            else:
-                messages.error(request, msg)
+@require_POST
+def resend_otp_api_view(request):
+    """
+    AJAX API to send/resend 4-digit OTP for Registration or Forgot Password.
+    Returns JSON response.
+    """
+    import json
+    data = {}
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+        except Exception:
+            pass
     else:
-        form = OTPVerifyForm()
+        data = request.POST
 
-    return render(request, 'accounts/verify_otp.html', {
-        'form': form,
-        'email': forgot_email,
-        'title': 'Xác thực OTP Quên Mật Khẩu',
-        'subtitle': f'Mã OTP 4 số đã được gửi tới email {forgot_email}'
-    })
+    email = data.get('email', '').strip().lower()
+    purpose = data.get('purpose', 'FORGOT_PASSWORD')
+
+    if not email:
+        return JsonResponse({'status': 'error', 'message': 'Vui lòng nhập địa chỉ email.'}, status=400)
+
+    if purpose == 'REGISTER':
+        success, msg = AuthService.send_registration_otp(email)
+    else:
+        success, msg = AuthService.send_forgot_password_otp(email)
+
+    if success:
+        return JsonResponse({'status': 'success', 'message': msg, 'email': email})
+    else:
+        return JsonResponse({'status': 'error', 'message': msg}, status=400)
 
 
 def reset_password_step3_view(request):

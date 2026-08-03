@@ -12,6 +12,7 @@ urlpatterns = [
     path('forgot-password/', views.forgot_password_step1_view, name='forgot_password'),
     path('forgot-password/otp/', views.forgot_password_step2_otp_view, name='forgot_password_otp'),
     path('forgot-password/reset/', views.reset_password_step3_view, name='reset_password'),
+    path('resend-otp-api/', views.resend_otp_api_view, name='resend_otp_api'),
 
     # Member Overview Route (All Users)
     path('members/overview/', views.members_overview_view, name='members_overview'),
