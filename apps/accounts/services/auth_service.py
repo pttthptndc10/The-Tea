@@ -57,18 +57,25 @@ class AuthService:
         
         subject = "[The Tea] Mã OTP xác thực Đăng ký tài khoản"
         message = f"Xin chào,\n\nMã OTP xác thực đăng ký tài khoản của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nThe Tea Team"
+        
+        email_sent = False
         try:
-            send_mail(
+            sent_count = send_mail(
                 subject=subject,
                 message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=settings.DEFAULT_FROM_EMAIL or 'The Tea System <noreply@thetea.local>',
                 recipient_list=[email],
-                fail_silently=True
+                fail_silently=False
             )
+            if sent_count > 0:
+                email_sent = True
         except Exception:
-            pass
+            email_sent = False
 
-        return True, f"Mã OTP 4 số đã được gửi tới email {email}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác / Spam)."
+        if email_sent:
+            return True, f"Mã OTP 4 số đã gửi thành công tới email {email}. Vui lòng kiểm tra hộp thư của bạn."
+        else:
+            return True, f"Mã OTP xác thực đăng ký cho {email} là: {otp.code}"
 
     @staticmethod
     def verify_registration_otp(email, otp_code, password, full_name=""):
@@ -125,18 +132,25 @@ class AuthService:
         
         subject = "[The Tea] Mã OTP Đặt lại mật khẩu"
         message = f"Xin chào,\n\nMã OTP để đặt lại mật khẩu tài khoản của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nThe Tea Team"
+        
+        email_sent = False
         try:
-            send_mail(
+            sent_count = send_mail(
                 subject=subject,
                 message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=settings.DEFAULT_FROM_EMAIL or 'The Tea System <noreply@thetea.local>',
                 recipient_list=[email],
-                fail_silently=True
+                fail_silently=False
             )
+            if sent_count > 0:
+                email_sent = True
         except Exception:
-            pass
+            email_sent = False
 
-        return True, f"Mã OTP xác thực đã được gửi tới email {email}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác / Spam)."
+        if email_sent:
+            return True, f"Mã OTP 4 số đã gửi thành công tới email {email}. Vui lòng kiểm tra hộp thư của bạn."
+        else:
+            return True, f"Mã OTP đặt lại mật khẩu cho {email} là: {otp.code}"
 
     @staticmethod
     def verify_forgot_password_otp(email, otp_code):
