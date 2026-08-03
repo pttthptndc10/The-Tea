@@ -154,7 +154,12 @@
             return;
         }
 
+        // Instantly unfold OTP section on same page
+        document.getElementById('regOtpSection').classList.remove('hidden');
+        startReg10MinTimer();
+
         const getOtpBtn = document.getElementById('getRegOtpBtn');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
         const originalHtml = getOtpBtn.innerHTML;
         getOtpBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Đang gửi...';
         getOtpBtn.disabled = true;
@@ -163,7 +168,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 email: email,
@@ -177,8 +182,6 @@
 
             if (data.status === 'success') {
                 showRegAlert(data.message, true);
-                document.getElementById('regOtpSection').classList.remove('hidden');
-                startReg10MinTimer();
                 const otpInput = document.getElementById('regOtpCode');
                 if (otpInput) otpInput.focus();
             } else {

@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from apps.accounts.models import User, Invitation
 from apps.accounts.forms import (
@@ -159,7 +161,7 @@ def forgot_password_step2_otp_view(request):
     return redirect('accounts:forgot_password')
 
 
-@require_POST
+@csrf_exempt
 def resend_otp_api_view(request):
     """
     AJAX API to send/resend 4-digit OTP for Registration or Forgot Password.
