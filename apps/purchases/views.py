@@ -151,3 +151,20 @@ def add_project_to_session_view(request, project_id):
 
     messages.success(request, f"Đã đưa linh kiện dự án '{project.name}' vào phiên gom hàng '{session.name}'.")
     return redirect(f"/projects/{project.id}/?tab=materials")
+
+
+@login_required
+@require_POST
+def session_delete_view(request, session_id):
+    """
+    Delete a Purchase Session.
+    """
+    session = get_object_or_404(PurchaseSession, id=session_id)
+    name = session.name
+    session.delete()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success', 'message': f"Đã xóa phiên mua sắm '{name}'."})
+
+    messages.success(request, f"Đã xóa phiên mua sắm '{name}'.")
+    return redirect('purchases:list')

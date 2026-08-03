@@ -67,6 +67,16 @@
                 <button onclick="openModal('editSessionModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition">
                     <i class="fa-solid fa-pen-to-square mr-1"></i> Cập nhật danh sách dự án
                 </button>
+
+                {% if user.role == 'ADMIN' or user.is_staff or user.is_superuser %}
+                <form method="POST" action="{% url 'purchases:delete' session.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" onclick="return confirm('Bạn có chắc chắn muốn XÓA vĩnh viễn phiên mua sắm {{ session.name }}?')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Xóa phiên</span>
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
 

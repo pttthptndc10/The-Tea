@@ -104,6 +104,17 @@
                         <span>Chi tiết</span>
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
                     </a>
+
+                    <!-- Delete Session Button -->
+                    {% if user.role == 'ADMIN' or user.is_staff or user.is_superuser %}
+                    <form method="POST" action="{% url 'purchases:delete' s.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Bạn có chắc chắn muốn XÓA phiên mua sắm {{ s.name }}?')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm" title="Xóa phiên mua sắm">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                            <span>Xóa</span>
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
 
