@@ -146,14 +146,14 @@
                     <div class="flex items-center gap-2 pt-1 text-xs text-slate-600">
                         <div class="w-6 h-6 rounded-full bg-pink-600 text-white font-bold flex items-center justify-center text-[10px] shadow-sm">
                             {% if p.manager %}
-                                {{ p.manager.email|slice:":1"|upper }}
+                                {{ p.manager.initial_letter }}
                             {% else %}
                                 ?
                             {% endif %}
                         </div>
-                        <span>
+                        <span class="font-semibold text-slate-700">
                             {% if p.manager %}
-                                {{ p.manager.full_name|default:p.manager.email }}
+                                {{ p.manager.display_name }}
                             {% else %}
                                 <span class="text-rose-600 italic font-semibold">Chưa chỉ định</span>
                             {% endif %}

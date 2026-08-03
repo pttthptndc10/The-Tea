@@ -40,8 +40,19 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == self.Role.ADMIN or self.is_superuser or self.is_staff
 
+    @property
+    def display_name(self):
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+        return self.email.split('@')[0]
+
+    @property
+    def initial_letter(self):
+        name = self.display_name
+        return name[0].upper() if name else 'U'
+
     def __str__(self):
-        return f"{self.full_name or self.email} ({self.get_role_display()})"
+        return f"{self.display_name} ({self.get_role_display()})"
 
 
 class Invitation(models.Model):

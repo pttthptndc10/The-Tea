@@ -119,11 +119,11 @@
                                    class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 cursor-pointer">
                             
                             <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">
-                                {{ u.email|slice:":1"|upper }}
+                                {{ u.initial_letter }}
                             </div>
                             <div>
                                 <label for="member_cb_{{ u.id }}" class="text-xs font-bold text-slate-800 cursor-pointer block hover:text-pink-600 transition">
-                                    {{ u.full_name|default:u.email }}
+                                    {{ u.display_name }}
                                 </label>
                                 <span class="text-[10px] text-slate-400 block">{{ u.email }} • {{ u.get_role_display }}</span>
                             </div>

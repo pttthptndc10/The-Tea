@@ -75,11 +75,11 @@
             <div class="p-6 bg-slate-50/70 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-bold flex items-center justify-center text-xl shadow-lg shadow-pink-500/20">
-                        {{ item.user.email|slice:":1"|upper }}
+                        {{ item.user.initial_letter }}
                     </div>
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="text-base font-extrabold text-slate-900">{{ item.user.full_name|default:item.user.email }}</h3>
+                            <h3 class="text-base font-extrabold text-slate-900">{{ item.user.display_name }}</h3>
                             
                             {% if item.user.role == 'ADMIN' %}
                             <span class="px-2.5 py-0.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
