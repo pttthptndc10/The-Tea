@@ -269,8 +269,11 @@
                     this.headX = width / 2;
                     this.headY = height / 2;
                     this.moveAngle = Math.random() * Math.PI * 2;
+                    this.targetAngle = this.moveAngle;
                     this.speed = 2.2;
                     this.waveTime = 0;
+                    this.noiseSeed = Math.random() * 1000;
+                    this.turnTimer = 0;
 
                     for (let i = 0; i < this.numSegments; i++) {
                         this.segments.push({
@@ -283,14 +286,24 @@
                 }
 
                 update() {
-                    this.waveTime += 0.03;
+                    this.waveTime += 0.025;
+                    this.turnTimer += 1;
                     
-                    // Autonomous Natural Meandering Path (No Mouse Control)
-                    this.moveAngle += (Math.sin(this.waveTime * 0.8) * 0.02) + ((Math.random() - 0.5) * 0.015);
+                    // Dynamic Random Steering Path
+                    if (this.turnTimer % 80 === 0 || Math.random() < 0.015) {
+                        this.targetAngle += (Math.random() - 0.5) * 1.8;
+                    }
+                    
+                    // Smooth Organic Angle Interpolation
+                    const angleDiff = Math.atan2(Math.sin(this.targetAngle - this.moveAngle), Math.cos(this.targetAngle - this.moveAngle));
+                    this.moveAngle += angleDiff * 0.03 + Math.sin(this.waveTime * 0.7 + this.noiseSeed) * 0.012;
+                    
+                    // Variable Speed
+                    const currentSpeed = this.speed + Math.sin(this.waveTime * 1.1) * 0.4;
                     
                     // Move Head
-                    this.headX += Math.cos(this.moveAngle) * this.speed;
-                    this.headY += Math.sin(this.moveAngle) * this.speed;
+                    this.headX += Math.cos(this.moveAngle) * currentSpeed;
+                    this.headY += Math.sin(this.moveAngle) * currentSpeed;
 
                     // Seamless Torus Wrap Around Screen Boundaries (Không bức tường)
                     const padding = 60;
@@ -303,7 +316,7 @@
                     this.segments[0].y = this.headY;
                     this.segments[0].angle = this.moveAngle;
 
-                    // Follow Inverse Kinematics with S-curve Wave
+                    // Organic Multi-Frequency Wiggling Wave (Uốn éo ngẫu nhiên tự nhiên)
                     for (let i = 1; i < this.numSegments; i++) {
                         let segDx = this.segments[i-1].x - this.segments[i].x;
                         let segDy = this.segments[i-1].y - this.segments[i].y;
@@ -317,10 +330,15 @@
 
                         if (segDist > 0) {
                             const angle = Math.atan2(segDy, segDx);
-                            const sineWave = Math.sin(this.waveTime * 2.5 - i * 0.3) * 2.5;
                             
-                            this.segments[i].x = this.segments[i-1].x - Math.cos(angle) * targetDist + Math.sin(angle) * sineWave;
-                            this.segments[i].y = this.segments[i-1].y - Math.sin(angle) * targetDist - Math.cos(angle) * sineWave;
+                            // Multi-frequency organic wiggling algorithm
+                            const wave1 = Math.sin(this.waveTime * 2.8 - i * 0.32 + this.noiseSeed);
+                            const wave2 = Math.cos(this.waveTime * 1.5 + i * 0.22);
+                            const wave3 = Math.sin(this.waveTime * 4.2 - i * 0.5) * 0.5;
+                            const organicWave = (wave1 * 2.2 + wave2 * 1.2 + wave3) * Math.sin((i / this.numSegments) * Math.PI);
+                            
+                            this.segments[i].x = this.segments[i-1].x - Math.cos(angle) * targetDist + Math.sin(angle) * organicWave;
+                            this.segments[i].y = this.segments[i-1].y - Math.sin(angle) * targetDist - Math.cos(angle) * organicWave;
                             this.segments[i].angle = angle;
 
                             // Wrap Body Segments gracefully
