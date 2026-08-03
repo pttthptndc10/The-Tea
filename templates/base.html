@@ -40,30 +40,30 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full font-sans antialiased text-slate-800 bg-gradient-to-br from-emerald-50/40 via-slate-50 to-teal-50/30 flex flex-col min-h-screen">
+<body class="h-full font-sans antialiased text-slate-800 bg-gradient-to-br from-pink-50/60 via-rose-50/30 to-slate-50 flex flex-col min-h-screen">
 
     {% if user.is_authenticated %}
     <!-- Logged In Layout with Sidebar & Header -->
     <div class="flex h-screen overflow-hidden">
         
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-xl border-r border-slate-200/80 transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:inset-0 flex flex-col justify-between shadow-xl">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-xl border-r border-pink-100 transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:inset-0 flex flex-col justify-between shadow-xl">
             <div>
-                <!-- Brand / Logo: Shield + Tea Leaf -->
-                <div class="h-16 flex items-center justify-between px-6 border-b border-emerald-800/40 bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 text-white shadow-md">
+                <!-- Brand / Logo: Shield + Clear Tea Leaf -->
+                <div class="h-16 flex items-center justify-between px-6 border-b border-pink-100 bg-white/90 backdrop-blur-md shadow-sm">
                     <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3 font-extrabold text-lg tracking-wide group">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 p-0.5 shadow-md shadow-emerald-900/30 flex items-center justify-center transition group-hover:scale-105">
-                            <div class="w-full h-full bg-emerald-950/50 rounded-[10px] backdrop-blur flex items-center justify-center">
-                                <svg class="w-5 h-5 text-emerald-300 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" opacity="0.35"/>
-                                    <path d="M12 2.5L4.5 5.8v5.2c0 4.8 3.3 9.3 7.5 10.4 4.2-1.1 7.5-5.6 7.5-10.4V5.8L12 2.5z" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                                    <path d="M12 6c-2.8 0-5 2.2-5 5 0 3.3 3.6 6.2 5 7.1 1.4-.9 5-3.8 5-7.1 0-2.8-2.2-5-5-5zm0 10c-1.2-.8-3.3-3.2-3.3-4.8 0-1.8 1.5-3.3 3.3-3.3s3.3 1.5 3.3 3.3c0 1.6-2.1 4-3.3 4.8z" fill="#34d399"/>
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-400 p-0.5 shadow-md shadow-pink-500/20 flex items-center justify-center transition group-hover:scale-105">
+                            <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
+                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2L4 5.5v5.5c0 4.9 3.4 9.5 8 10.6 4.6-1.1 8-5.7 8-10.6V5.5L12 2z" fill="#fce7f3" stroke="#db2777" stroke-width="1.2"/>
+                                    <path d="M12 5.5C9 5.5 7 8 7 11c0 3.5 3.5 6.5 5 7.5 1.5-1 5-4 5-7.5 0-3-2-5.5-5-5.5z" fill="#10b981"/>
+                                    <path d="M12 6.5v9.5M12 9.5l-2-1.5M12 12l2-1.5" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round"/>
                                 </svg>
                             </div>
                         </div>
-                        <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-100 bg-clip-text text-transparent font-black tracking-tight text-xl">The Tea</span>
+                        <span class="bg-gradient-to-r from-pink-700 via-rose-600 to-pink-600 bg-clip-text text-transparent font-black tracking-tight text-xl">The Tea</span>
                     </a>
-                    <button id="closeSidebarMobile" class="md:hidden text-slate-300 hover:text-white">
+                    <button id="closeSidebarMobile" class="md:hidden text-slate-400 hover:text-slate-700">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
@@ -72,44 +72,44 @@
                 <nav class="p-4 space-y-1.5">
                     <a href="{% url 'dashboard:index' %}" 
                        onmouseenter="if(!window.pref_dash){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_dash=true; }"
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'dashboard' or request.path == '/' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-chart-pie w-5 text-center {% if request.resolver_match.app_name == 'dashboard' or request.path == '/' %}text-white{% else %}text-emerald-600{% endif %}"></i>
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'dashboard' or request.path == '/' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-chart-pie w-5 text-center {% if request.resolver_match.app_name == 'dashboard' or request.path == '/' %}text-white{% else %}text-pink-600{% endif %}"></i>
                         <span>Tổng quan</span>
                     </a>
 
                     <a href="{% url 'projects:list' %}" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'projects' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-folder-tree w-5 text-center {% if request.resolver_match.app_name == 'projects' %}text-white{% else %}text-emerald-600{% endif %}"></i>
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'projects' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-folder-tree w-5 text-center {% if request.resolver_match.app_name == 'projects' %}text-white{% else %}text-pink-600{% endif %}"></i>
                         <span>Dự án</span>
                     </a>
 
                     <a href="{% url 'accounts:members_overview' %}" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.url_name == 'members_overview' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-users w-5 text-center {% if request.resolver_match.url_name == 'members_overview' %}text-white{% else %}text-emerald-600{% endif %}"></i>
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.url_name == 'members_overview' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-users w-5 text-center {% if request.resolver_match.url_name == 'members_overview' %}text-white{% else %}text-pink-600{% endif %}"></i>
                         <span>Thành viên</span>
                     </a>
 
                     <a href="{% url 'purchases:list' %}" 
                        onmouseenter="if(!window.pref_purc){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_purc=true; }"
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'purchases' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-cart-shopping w-5 text-center {% if request.resolver_match.app_name == 'purchases' %}text-white{% else %}text-emerald-600{% endif %}"></i>
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'purchases' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-cart-shopping w-5 text-center {% if request.resolver_match.app_name == 'purchases' %}text-white{% else %}text-pink-600{% endif %}"></i>
                         <span>Phiên mua sắm</span>
                     </a>
 
                     <a href="{% url 'reports:dashboard' %}" 
                        onmouseenter="if(!window.pref_rep){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_rep=true; }"
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'reports' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                        <i class="fa-solid fa-chart-line w-5 text-center {% if request.resolver_match.app_name == 'reports' %}text-white{% else %}text-emerald-600{% endif %}"></i>
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'reports' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-chart-line w-5 text-center {% if request.resolver_match.app_name == 'reports' %}text-white{% else %}text-pink-600{% endif %}"></i>
                         <span>Báo cáo</span>
                     </a>
 
                     {% if user.role == 'ADMIN' or user.is_staff or user.is_superuser %}
-                    <div class="pt-4 mt-4 border-t border-slate-100 space-y-1">
-                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Quản trị Hệ thống</p>
+                    <div class="pt-4 mt-4 border-t border-pink-100 space-y-1">
+                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-pink-400 mb-2">Quản trị Hệ thống</p>
                         <a href="{% url 'accounts:member_list' %}" 
                            onmouseenter="if(!window.pref_mem){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_mem=true; }"
-                           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'members_overview' %}bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 translate-x-1{% else %}text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 hover:translate-x-1.5{% endif %}">
-                            <i class="fa-solid fa-users-gear w-5 text-center"></i>
+                           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'members_overview' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                            <i class="fa-solid fa-users-gear w-5 text-center text-pink-600"></i>
                             <span>Thành viên & Mời</span>
                         </a>
                     </div>
@@ -118,15 +118,15 @@
             </div>
 
             <!-- User Footer Info -->
-            <div class="p-4 border-t border-slate-100 bg-slate-50/60">
+            <div class="p-4 border-t border-pink-100 bg-pink-50/40">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-bold flex items-center justify-center text-sm shadow-sm">
                             {{ user.email|slice:":1"|upper }}
                         </div>
                         <div class="truncate max-w-[120px]">
                             <p class="text-xs font-bold text-slate-800 truncate">{{ user.full_name|default:user.email }}</p>
-                            <span class="inline-block px-1.5 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-800 rounded">
+                            <span class="inline-block px-1.5 py-0.5 text-[10px] font-extrabold bg-pink-100 text-pink-800 rounded">
                                 {{ user.get_role_display|default:user.role }}
                             </span>
                         </div>
@@ -141,7 +141,7 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <!-- Header Bar -->
-            <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-4 md:px-8">
+            <header class="h-16 bg-white/90 backdrop-blur-md border-b border-pink-100 flex items-center justify-between px-4 md:px-8">
                 <div class="flex items-center gap-3">
                     <button id="openSidebarMobile" class="md:hidden text-slate-600 hover:text-slate-900 p-2">
                         <i class="fa-solid fa-bars text-lg"></i>
@@ -154,7 +154,7 @@
                 <div class="flex items-center gap-4">
                     <!-- Notification Bell Dropdown -->
                     <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="relative p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition">
+                        <button @click="open = !open" class="relative p-2 text-slate-500 hover:text-pink-600 rounded-xl hover:bg-pink-50 transition">
                             <i class="fa-regular fa-bell text-lg"></i>
                             {% if unread_notifications_count > 0 %}
                             <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-ping"></span>
