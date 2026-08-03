@@ -46,9 +46,11 @@ class ProjectForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Limit manager choices to active users
+        # Limit manager choices to active users & make selection mandatory
         self.fields['manager'].queryset = User.objects.filter(status=User.Status.ACTIVE)
-        self.fields['manager'].empty_label = "-- Chưa chọn người quản lý --"
+        self.fields['manager'].empty_label = "-- Chọn người quản lý (Bắt buộc) --"
+        self.fields['manager'].required = True
+        self.fields['manager'].error_messages = {'required': 'Vui lòng chọn 1 người quản lý trực thuộc cho dự án.'}
 
         if self.instance and self.instance.pk:
             initial_members = User.objects.filter(project_memberships__project=self.instance)

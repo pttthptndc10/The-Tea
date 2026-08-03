@@ -97,6 +97,8 @@ def project_create_view(request):
         if form.is_valid():
             project = form.save(commit=False)
             project.created_by = request.user
+            if not project.manager:
+                project.manager = request.user
             project.save()
 
             # Save project members
