@@ -632,6 +632,20 @@
                 }
             }
 
+            // Apples & Eating Burst Particles Array
+            const apples = [];
+            const eatingParticles = [];
+
+            // Spawn Apple on Background Click
+            window.addEventListener('click', (e) => {
+                if (e.target.closest('input, button, a, form, label, textarea')) return;
+                apples.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    pulse: 0
+                });
+            });
+
             const dragon = new EasternImperialDragon();
             
             // Ambient Floating Golden Stardust
@@ -646,6 +660,52 @@
                 });
             }
 
+            function drawApple(ctx, apple) {
+                ctx.save();
+                ctx.translate(apple.x, apple.y);
+
+                apple.pulse += 0.05;
+                const scalePulse = 1 + Math.sin(apple.pulse) * 0.08;
+                ctx.scale(scalePulse, scalePulse);
+
+                // Golden Glow Ring
+                ctx.beginPath();
+                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.25)';
+                ctx.fill();
+
+                // Apple Red Body
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                const appleGrad = ctx.createRadialGradient(-3, -3, 1, 0, 0, 10);
+                appleGrad.addColorStop(0, '#f87171');
+                appleGrad.addColorStop(0.5, '#ef4444');
+                appleGrad.addColorStop(1, '#991b1b');
+                ctx.fillStyle = appleGrad;
+                ctx.shadowColor = '#ef4444';
+                ctx.shadowBlur = 14;
+                ctx.fill();
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Leaf
+                ctx.beginPath();
+                ctx.ellipse(4, -10, 4.5, 2.2, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#4ade80';
+                ctx.fill();
+
+                // Stem
+                ctx.beginPath();
+                ctx.moveTo(0, -8);
+                ctx.lineTo(1.5, -13);
+                ctx.strokeStyle = '#78350f';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
             function render() {
                 ctx.clearRect(0, 0, width, height);
                 
@@ -658,10 +718,87 @@
                     ctx.fillStyle = `rgba(254, 240, 138, ${s.opacity})`;
                     ctx.fill();
                 });
+
+                // Apple Seeking Logic for Dragon
+                if (apples.length > 0) {
+                    const head = dragon.segments[0];
+                    let closestDist = Infinity;
+                    let targetApple = null;
+                    let targetIndex = -1;
+
+                    // Screen modulo head pos
+                    const headSx = ((head.x % width) + width) % width;
+                    const headSy = ((head.y % height) + height) % height;
+
+                    apples.forEach((app, idx) => {
+                        let dx = app.x - headSx;
+                        let dy = app.y - headSy;
+                        if (Math.abs(dx) > width / 2) dx -= Math.sign(dx) * width;
+                        if (Math.abs(dy) > height / 2) dy -= Math.sign(dy) * height;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            targetApple = { dx, dy, dist, app };
+                            targetIndex = idx;
+                        }
+                    });
+
+                    if (targetApple) {
+                        dragon.flightState = 'ACTIVE';
+                        dragon.targetAngle = Math.atan2(targetApple.dy, targetApple.dx);
+
+                        // Eat Apple when Dragon Head reaches it!
+                        if (targetApple.dist < 32) {
+                            // Spawn Eating Burst Particles
+                            for (let p = 0; p < 22; p++) {
+                                const angle = Math.random() * Math.PI * 2;
+                                const spd = Math.random() * 4 + 1.5;
+                                eatingParticles.push({
+                                    x: targetApple.app.x,
+                                    y: targetApple.app.y,
+                                    vx: Math.cos(angle) * spd,
+                                    vy: Math.sin(angle) * spd,
+                                    size: Math.random() * 4 + 2,
+                                    color: Math.random() > 0.4 ? '#fbbf24' : '#ef4444',
+                                    life: 1,
+                                    decay: Math.random() * 0.04 + 0.02
+                                });
+                            }
+                            // Remove eaten apple
+                            apples.splice(targetIndex, 1);
+                        }
+                    }
+                }
                 
-                // Update & Render Eastern Imperial Dragon
+                // Update & Render Dragon
                 dragon.update();
                 dragon.draw(ctx);
+
+                // Render Apples
+                apples.forEach(app => drawApple(ctx, app));
+
+                // Render & Update Eating Burst Particles
+                for (let i = eatingParticles.length - 1; i >= 0; i--) {
+                    const p = eatingParticles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= p.decay;
+
+                    if (p.life <= 0) {
+                        eatingParticles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
                 
                 requestAnimationFrame(render);
             }
