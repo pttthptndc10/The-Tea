@@ -369,10 +369,13 @@
                     }
                 }
 
-                drawDragonClaw(ctx, seg, isLeft) {
+                drawDragonClaw(ctx, seg, isLeft, segIndex) {
                     ctx.save();
                     ctx.translate(seg.x, seg.y);
-                    const legAngle = seg.angle + (isLeft ? -Math.PI / 2.2 : Math.PI / 2.2);
+                    
+                    // Dynamic Leg Sway Angle synced with body wiggling & flight state intensity
+                    const legSway = Math.sin(this.waveTime * 2.8 - segIndex * 0.35 + (isLeft ? 0 : Math.PI * 0.5)) * 0.38 * this.currentIntensity;
+                    const legAngle = seg.angle + (isLeft ? -Math.PI / 2.2 : Math.PI / 2.2) + legSway;
                     ctx.rotate(legAngle);
 
                     ctx.save();
@@ -399,12 +402,17 @@
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
 
-                    // 2. Muscular Calf / Shin (Cẳng Chân Khỏe Khắn)
+                    // 2. Muscular Calf / Shin (Cẳng Chân Khỏe Khắn Co Bóp)
+                    const kneeFlex = Math.cos(this.waveTime * 2.8 - segIndex * 0.35) * 0.15 * this.currentIntensity;
+                    ctx.save();
+                    ctx.translate(22, 0);
+                    ctx.rotate(kneeFlex);
+
                     ctx.beginPath();
-                    ctx.moveTo(22, -6);
-                    ctx.quadraticCurveTo(32, -14, 38, -6);
-                    ctx.lineTo(36, 2);
-                    ctx.lineTo(22, 0);
+                    ctx.moveTo(0, -6);
+                    ctx.quadraticCurveTo(10, -14, 16, -6);
+                    ctx.lineTo(14, 2);
+                    ctx.lineTo(0, 0);
                     ctx.closePath();
                     ctx.fillStyle = '#fef08a';
                     ctx.fill();
@@ -412,13 +420,14 @@
                     ctx.lineWidth = 1.2;
                     ctx.stroke();
 
-                    // 3. Four Sharp Curved Dragon Talons (4 Móng Vuốt Cong Nhọn Bàn Chân)
-                    ctx.translate(38, -2);
+                    // 3. Four Sharp Curved Dragon Talons (4 Móng Vuốt Lắc Lư Theo Nhịp Sóng)
+                    ctx.translate(16, -2);
                     const talonAngles = [-0.55, -0.2, 0.2, 0.55];
+                    const talonFlex = Math.sin(this.waveTime * 3.5 - segIndex * 0.4) * 0.12 * this.currentIntensity;
 
                     talonAngles.forEach(tAngle => {
                         ctx.save();
-                        ctx.rotate(tAngle);
+                        ctx.rotate(tAngle + talonFlex);
 
                         // Curved Razor Talon Blade (Móng Vuốt Cong Sắc Nhọn)
                         ctx.beginPath();
@@ -445,20 +454,21 @@
 
                     ctx.restore();
                     ctx.restore();
+                    ctx.restore();
                 }
 
                 drawDragonInstance(ctx, offsetX, offsetY) {
                     ctx.save();
                     ctx.translate(offsetX, offsetY);
 
-                    // 0. Render 4 Imperial Dragon Claws (Tứ Trảo Rồng - 2 Chi Trước & 2 Chi Sau)
+                    // 0. Render 4 Imperial Dragon Claws (Tứ Trảo Rồng - Lắc Lư Nhịp Nhàng Theo Độ Uốn Thân)
                     if (this.segments[6]) {
-                        this.drawDragonClaw(ctx, this.segments[6], true);  // Front Left Claw
-                        this.drawDragonClaw(ctx, this.segments[6], false); // Front Right Claw
+                        this.drawDragonClaw(ctx, this.segments[6], true, 6);  // Front Left Claw
+                        this.drawDragonClaw(ctx, this.segments[6], false, 6); // Front Right Claw
                     }
                     if (this.segments[18]) {
-                        this.drawDragonClaw(ctx, this.segments[18], true);  // Rear Left Claw
-                        this.drawDragonClaw(ctx, this.segments[18], false); // Rear Right Claw
+                        this.drawDragonClaw(ctx, this.segments[18], true, 18);  // Rear Left Claw
+                        this.drawDragonClaw(ctx, this.segments[18], false, 18); // Rear Right Claw
                     }
 
                     // 1. Draw Body Spine & Calligraphic Flames (Gold & Pearl White)
