@@ -43,15 +43,18 @@ class AuthService:
     @staticmethod
     def send_registration_otp(email):
         """
-        Checks if email is invited and sends 4-digit OTP code for registration.
+        Sends 4-digit OTP code for registration. Auto-creates invitation record if not present.
         """
         email = email.lower().strip()
-        invitation = Invitation.objects.filter(email=email, is_used=False).first()
-        if not invitation:
-            return False, "Email này chưa được Admin mời hoặc đã sử dụng. Vui lòng liên hệ Admin để nhận lời mời."
-        
         if User.objects.filter(email=email).exists():
-            return False, "Tài khoản với email này đã tồn tại."
+            return False, "Tài khoản với email này đã tồn tại trong hệ thống."
+
+        # Automatically ensure an invitation record exists
+        invitation, _ = Invitation.objects.get_or_create(
+            email=email,
+            is_used=False,
+            defaults={'invited_by': None, 'token': secrets.token_urlsafe(32)}
+        )
 
         otp = OTPCode.generate_otp(email, OTPCode.Purpose.REGISTER)
         
@@ -90,7 +93,11 @@ class AuthService:
 
         invitation = Invitation.objects.filter(email=email, is_used=False).first()
         if not invitation:
-            return False, "Lời mời không hợp lệ."
+            invitation, _ = Invitation.objects.get_or_create(
+                email=email,
+                is_used=False,
+                defaults={'invited_by': None, 'token': secrets.token_urlsafe(32)}
+            )
 
         # Create User
         user = User.objects.create_user(
