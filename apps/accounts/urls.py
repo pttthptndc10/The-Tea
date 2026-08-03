@@ -13,6 +13,9 @@ urlpatterns = [
     path('forgot-password/otp/', views.forgot_password_step2_otp_view, name='forgot_password_otp'),
     path('forgot-password/reset/', views.reset_password_step3_view, name='reset_password'),
 
+    # Member Overview Route (All Users)
+    path('members/overview/', views.members_overview_view, name='members_overview'),
+
     # Admin Management Routes
     path('members/', views.member_list_view, name='member_list'),
     path('members/invite/', views.invite_member_view, name='invite_member'),

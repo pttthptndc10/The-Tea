@@ -224,6 +224,51 @@ def reset_password_step3_view(request):
     return render(request, 'accounts/reset_password.html', {'form': form})
 
 
+@login_required
+def members_overview_view(request):
+    """
+    Overview page of all system members, their assigned projects, tasks, and chat trigger.
+    Accessible to all authenticated users.
+    """
+    from apps.projects.models import Project
+    from apps.tasks.models import Task
+
+    members = User.objects.filter(status=User.Status.ACTIVE).prefetch_related(
+        'managed_projects',
+        'project_memberships__project',
+        'task_assignments__task__project'
+    ).order_by('-created_at')
+
+    members_data = []
+    total_projects_count = Project.objects.count()
+    total_tasks_count = Task.objects.count()
+
+    for m in members:
+        managed_projs = list(m.managed_projects.all())
+        participated_projs = [pm.project for pm in m.project_memberships.all() if pm.project not in managed_projs]
+        all_user_projs = managed_projs + participated_projs
+
+        assigned_tasks = [ta.task for ta in m.task_assignments.select_related('task__project').all()]
+
+        members_data.append({
+            'user': m,
+            'managed_projects': managed_projs,
+            'participated_projects': participated_projs,
+            'all_projects': all_user_projs,
+            'assigned_tasks': assigned_tasks,
+            'project_count': len(all_user_projs),
+            'task_count': len(assigned_tasks),
+        })
+
+    context = {
+        'members_data': members_data,
+        'total_members': len(members),
+        'total_projects_count': total_projects_count,
+        'total_tasks_count': total_tasks_count,
+    }
+    return render(request, 'accounts/members_overview.html', context)
+
+
 # ==========================================
 # ADMIN USER MANAGEMENT VIEWS
 # ==========================================

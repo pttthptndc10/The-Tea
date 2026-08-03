@@ -77,6 +77,12 @@
                         <span>Dự án</span>
                     </a>
 
+                    <a href="{% url 'accounts:members_overview' %}" 
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 ease-out {% if request.resolver_match.url_name == 'members_overview' %}bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-200/80 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-users w-5 text-center"></i>
+                        <span>Thành viên</span>
+                    </a>
+
                     <a href="{% url 'purchases:list' %}" 
                        onmouseenter="if(!window.pref_purc){ const l=document.createElement('link'); l.rel='prefetch'; l.href=this.href; document.head.appendChild(l); window.pref_purc=true; }"
                        class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200 ease-out {% if request.resolver_match.app_name == 'purchases' %}bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-200/80 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">

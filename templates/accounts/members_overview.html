@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block title %}Tổng Quan Thành Viên - The Tea{% endblock %}
+{% block page_title %}Tổng Quan Thành Viên{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Summary Banner & Metrics -->
+    <div class="bg-gradient-to-r from-pink-600 via-rose-500 to-pink-700 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-pink-500/20 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black pointer-events-none">
+            <i class="fa-solid fa-users"></i>
+        </div>
+
+        <div class="relative z-10 max-w-3xl space-y-2">
+            <span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-pink-100 border border-white/20">
+                👥 Nhân Sự & Phân Công
+            </span>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Danh Sách Thành Viên Hệ Thống</h2>
+            <p class="text-pink-100 text-xs md:text-sm leading-relaxed">
+                Theo dõi tổng quan thành viên, danh sách các dự án đang tham gia / quản lý, tiến độ công việc được giao và tương tác trò chuyện trực tiếp.
+            </p>
+        </div>
+
+        <!-- Metric Stat Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/20 relative z-10">
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                <p class="text-xs font-bold text-pink-100 uppercase tracking-wider">Tổng Thành Viên</p>
+                <p class="text-2xl font-black mt-1">{{ total_members }} <span class="text-xs font-normal text-pink-200">người</span></p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                <p class="text-xs font-bold text-pink-100 uppercase tracking-wider">Tổng Số Dự Án</p>
+                <p class="text-2xl font-black mt-1">{{ total_projects_count }} <span class="text-xs font-normal text-pink-200">dự án</span></p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                <p class="text-xs font-bold text-pink-100 uppercase tracking-wider">Tổng Công Việc</p>
+                <p class="text-2xl font-black mt-1">{{ total_tasks_count }} <span class="text-xs font-normal text-pink-200">nhiệm vụ</span></p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                <p class="text-xs font-bold text-pink-100 uppercase tracking-wider">Trạng Thái Hệ Thống</p>
+                <p class="text-sm font-bold mt-2 text-emerald-300 flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>Hoạt động 100%</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls Bar -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="relative flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="memberSearchInput" onkeyup="filterMembers()" placeholder="Tìm kiếm thành viên theo tên, email..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition">
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <button type="button" onclick="filterRole('ALL', this)" class="role-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-md shadow-pink-200/80">
+                Tất cả ({{ total_members }})
+            </button>
+            <button type="button" onclick="filterRole('ADMIN', this)" class="role-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:bg-pink-50 border border-slate-200">
+                Admin
+            </button>
+            <button type="button" onclick="filterRole('MEMBER', this)" class="role-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:bg-pink-50 border border-slate-200">
+                Thành viên
+            </button>
+        </div>
+    </div>
+
+    <!-- Members Cards List -->
+    <div id="membersContainer" class="space-y-6">
+        {% for item in members_data %}
+        <div class="member-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition hover:shadow-md" data-role="{{ item.user.role }}" data-search="{{ item.user.full_name|default:item.user.email }} {{ item.user.email }}">
+            
+            <!-- Member Header Bar -->
+            <div class="p-6 bg-slate-50/70 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-500 text-white font-bold flex items-center justify-center text-xl shadow-lg shadow-pink-500/20">
+                        {{ item.user.email|slice:":1"|upper }}
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-base font-extrabold text-slate-900">{{ item.user.full_name|default:item.user.email }}</h3>
+                            
+                            {% if item.user.role == 'ADMIN' %}
+                            <span class="px-2.5 py-0.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                                Admin
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 bg-slate-200 text-slate-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                Member
+                            </span>
+                            {% endif %}
+
+                            <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold">
+                                🟢 Hoạt động
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-500 font-medium">
+                            <i class="fa-regular fa-envelope text-slate-400 mr-1"></i> {{ item.user.email }}
+                            <span class="mx-2 text-slate-300">•</span>
+                            <i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i> Đã tham gia: {{ item.user.created_at|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Chat & Action Button -->
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="openDirectChatModal('{{ item.user.id }}', '{{ item.user.full_name|default:item.user.email|escapejs }}', '{{ item.user.email|escapejs }}')" class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-pink-200/80 transition flex items-center gap-2">
+                        <i class="fa-solid fa-comment-dots text-sm"></i>
+                        <span>Chat trực tiếp</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Member Projects & Tasks Content Body -->
+            <div class="p-6 space-y-6">
+
+                <!-- Section 1: Projects Managed & Participated -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-folder-tree text-pink-600"></i>
+                            <span>Dự án tham gia & quản lý ({{ item.project_count }})</span>
+                        </h4>
+                    </div>
+
+                    {% if item.all_projects %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {% for p in item.all_projects %}
+                        <div class="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-pink-300 transition space-y-3 shadow-xs">
+                            <div class="flex items-start justify-between gap-2">
+                                <a href="{% url 'projects:detail' p.id %}" class="font-bold text-xs text-slate-900 hover:text-pink-600 transition truncate block flex-1">
+                                    {{ p.name }}
+                                </a>
+                                {% if p.manager.id == item.user.id %}
+                                <span class="px-2 py-0.5 bg-pink-100 text-pink-700 rounded-md text-[10px] font-bold whitespace-nowrap">
+                                    Manager
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold whitespace-nowrap">
+                                    Thành viên
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[11px] font-medium text-slate-500">
+                                    <span>Tiến độ</span>
+                                    <span class="font-bold text-pink-600">{{ p.get_progress_percentage }}%</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full transition-all duration-300" style="width: {{ p.get_progress_percentage }}%;"></div>
+                                </div>
+                            </div>
+
+                            <p class="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                                <span><i class="fa-regular fa-clock mr-1"></i> {{ p.start_date|date:"d/m" }} - {{ p.end_date|date:"d/m/Y" }}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                                    {% if p.status == 'COMPLETED' %}bg-emerald-50 text-emerald-700
+                                    {% elif p.status == 'IN_PROGRESS' %}bg-amber-50 text-amber-700
+                                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {{ p.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-slate-400 italic py-2">Thành viên này hiện chưa tham gia dự án nào.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Section 2: Tasks Assigned -->
+                <div class="space-y-3 pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-pink-600"></i>
+                            <span>Công việc được giao ({{ item.task_count }})</span>
+                        </h4>
+                    </div>
+
+                    {% if item.assigned_tasks %}
+                    <div class="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-white">
+                        {% for t in item.assigned_tasks %}
+                        <div class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition">
+                            <div class="space-y-1 flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <a href="{% url 'projects:detail' t.project.id %}?tab=checklist" class="font-bold text-xs text-slate-900 hover:text-pink-600 transition truncate">
+                                        {{ t.title }}
+                                    </a>
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold truncate">
+                                        {{ t.project.name }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 truncate">{{ t.description|default:"Không có mô tả chi tiết." }}</p>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0">
+                                <!-- Priority Badge -->
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold 
+                                    {% if t.priority == 'HIGH' %}bg-rose-100 text-rose-700
+                                    {% elif t.priority == 'MEDIUM' %}bg-amber-100 text-amber-700
+                                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {{ t.get_priority_display }}
+                                </span>
+
+                                <!-- Status Badge -->
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold 
+                                    {% if t.status == 'COMPLETED' %}bg-emerald-100 text-emerald-800
+                                    {% elif t.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                                    {% elif t.status == 'CANCELLED' %}bg-rose-100 text-rose-800
+                                    {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                    {{ t.get_status_display }}
+                                </span>
+
+                                {% if t.due_date %}
+                                <span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                    Hạn: {{ t.due_date|date:"d/m/Y" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-slate-400 italic py-2">Thành viên này hiện chưa được phân công nhiệm vụ nào.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 italic space-y-2">
+            <i class="fa-solid fa-users text-3xl"></i>
+            <p>Chưa có thành viên nào trong hệ thống.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- Interactive Direct Chat Modal Widget -->
+<div id="directChatModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Modal Header -->
+        <div class="p-4 sm:p-5 bg-gradient-to-r from-pink-600 to-rose-500 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="chatModalAvatar" class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md text-white font-bold flex items-center justify-center text-base shadow-sm">
+                    U
+                </div>
+                <div>
+                    <h3 id="chatModalUserName" class="font-bold text-sm">Tên Thành Viên</h3>
+                    <p id="chatModalUserEmail" class="text-[11px] text-pink-100">user@example.com</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeDirectChatModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="chatMessagesBox" class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3 bg-slate-50/60 min-h-[250px]">
+            <div class="text-center py-2">
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-3 py-1 rounded-full">
+                    Bắt đầu cuộc trò chuyện trực tiếp
+                </span>
+            </div>
+
+            <div class="flex items-start gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    S
+                </div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs max-w-[80%] text-xs text-slate-700">
+                    Xin chào! Bạn có thể để lại tin nhắn hoặc trao đổi công việc tại đây.
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input & Quick Contact Actions -->
+        <div class="p-4 bg-white border-t border-slate-100 space-y-3">
+            <div class="flex items-center gap-2">
+                <input type="text" id="chatInputText" onkeypress="if(event.key==='Enter') sendChatMessage();" placeholder="Nhập tin nhắn..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition">
+                <button type="button" onclick="sendChatMessage()" class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                    <span>Gửi</span>
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                <a id="chatEmailLink" href="mailto:" class="hover:text-pink-600 transition flex items-center gap-1">
+                    <i class="fa-regular fa-envelope text-pink-600"></i>
+                    <span>Gửi Email</span>
+                </a>
+                <span class="text-slate-300">•</span>
+                <span class="text-emerald-600 font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
+                    <span>Trực tuyến</span>
+                </span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function filterMembers() {
+        const query = document.getElementById('memberSearchInput').value.toLowerCase().trim();
+        document.querySelectorAll('.member-card').forEach(card => {
+            const searchData = card.getAttribute('data-search').toLowerCase();
+            if (!query || searchData.includes(query)) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    }
+
+    function filterRole(role, btn) {
+        document.querySelectorAll('.role-filter-btn').forEach(b => {
+            b.className = "role-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:bg-pink-50 border border-slate-200";
+        });
+        btn.className = "role-filter-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-md shadow-pink-200/80";
+
+        document.querySelectorAll('.member-card').forEach(card => {
+            const cardRole = card.getAttribute('data-role');
+            if (role === 'ALL' || cardRole === role) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    }
+
+    let activeChatUserId = null;
+
+    function openDirectChatModal(userId, userName, userEmail) {
+        activeChatUserId = userId;
+        document.getElementById('chatModalUserName').innerText = userName;
+        document.getElementById('chatModalUserEmail').innerText = userEmail;
+        document.getElementById('chatModalAvatar').innerText = userEmail.charAt(0).toUpperCase();
+        document.getElementById('chatEmailLink').setAttribute('href', 'mailto:' + userEmail);
+        document.getElementById('directChatModal').classList.remove('hidden');
+    }
+
+    function closeDirectChatModal() {
+        document.getElementById('directChatModal').classList.add('hidden');
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById('chatInputText');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const box = document.getElementById('chatMessagesBox');
+        
+        // Append sent message
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'flex items-start justify-end gap-2.5';
+        msgDiv.innerHTML = `
+            <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs max-w-[80%] text-xs font-medium">
+                ${text}
+            </div>
+            <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                Tôi
+            </div>
+        `;
+        box.appendChild(msgDiv);
+        input.value = '';
+        box.scrollTop = box.scrollHeight;
+
+        // Auto simulated reply in 1s
+        setTimeout(() => {
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'flex items-start gap-2.5';
+            replyDiv.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    S
+                </div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs max-w-[80%] text-xs text-slate-700">
+                    Cảm ơn bạn! Đã nhận được tin nhắn: "<em>${text}</em>".
+                </div>
+            `;
+            box.appendChild(replyDiv);
+            box.scrollTop = box.scrollHeight;
+        }, 800);
+    }
+</script>
+{% endblock %}
