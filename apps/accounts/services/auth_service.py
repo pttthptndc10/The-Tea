@@ -56,7 +56,7 @@ class AuthService:
         otp = OTPCode.generate_otp(email, OTPCode.Purpose.REGISTER)
         
         subject = "[The Tea] Mã OTP xác thực Đăng ký tài khoản"
-        message = f"Mã OTP xác thực đăng ký của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho bất kỳ ai."
+        message = f"Xin chào,\n\nMã OTP xác thực đăng ký tài khoản của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nThe Tea Team"
         try:
             send_mail(
                 subject=subject,
@@ -68,9 +68,7 @@ class AuthService:
         except Exception:
             pass
 
-        if settings.DEBUG:
-            return True, f"Mã OTP 4 số đã khởi tạo cho {email} (Mã test Dev: {otp.code})"
-        return True, f"Mã OTP 4 số đã được gửi tới Email: {email}"
+        return True, f"Mã OTP 4 số đã được gửi tới email {email}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác / Spam)."
 
     @staticmethod
     def verify_registration_otp(email, otp_code, password, full_name=""):
@@ -126,7 +124,7 @@ class AuthService:
         otp = OTPCode.generate_otp(email, OTPCode.Purpose.FORGOT_PASSWORD)
         
         subject = "[The Tea] Mã OTP Đặt lại mật khẩu"
-        message = f"Mã OTP để đặt lại mật khẩu của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho ai."
+        message = f"Xin chào,\n\nMã OTP để đặt lại mật khẩu tài khoản của bạn là: {otp.code}\n\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nThe Tea Team"
         try:
             send_mail(
                 subject=subject,
@@ -138,9 +136,7 @@ class AuthService:
         except Exception:
             pass
 
-        if settings.DEBUG:
-            return True, f"Mã OTP xác thực đã gửi cho {email} (Mã test Dev: {otp.code})"
-        return True, "Mã OTP xác thực đã được gửi tới Email của bạn."
+        return True, f"Mã OTP xác thực đã được gửi tới email {email}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác / Spam)."
 
     @staticmethod
     def verify_forgot_password_otp(email, otp_code):
