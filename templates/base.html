@@ -255,253 +255,254 @@
             
             let width = canvas.width = window.innerWidth;
             let height = canvas.height = window.innerHeight;
-            let mouse = { x: width / 2, y: height / 2, active: false };
             
             window.addEventListener('resize', () => {
                 width = canvas.width = window.innerWidth;
                 height = canvas.height = window.innerHeight;
             });
-            
-            window.addEventListener('mousemove', (e) => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-                mouse.active = true;
-            });
-            
-            window.addEventListener('mouseleave', () => {
-                mouse.active = false;
-            });
 
-            // Sharp 2D Angular Metallic Gold & Pearl White Dragon Class
-            class SharpGoldenDragon {
+            // Majestic Oriental Calligraphic Dragon with Torus Screen Wrap
+            class EasternImperialDragon {
                 constructor() {
-                    this.numSegments = 22;
+                    this.numSegments = 28;
                     this.segments = [];
-                    this.angle = 0;
-                    this.speed = 2.8;
                     this.headX = width / 2;
                     this.headY = height / 2;
-                    this.targetX = width / 2;
-                    this.targetY = height / 2;
-                    this.changeDirTime = 0;
-                    
+                    this.moveAngle = Math.random() * Math.PI * 2;
+                    this.speed = 2.2;
+                    this.waveTime = 0;
+
                     for (let i = 0; i < this.numSegments; i++) {
                         this.segments.push({
-                            x: this.headX - i * 18,
+                            x: this.headX - i * 16,
                             y: this.headY,
                             angle: 0,
-                            width: i === 0 ? 24 : Math.max(6, 22 - i * 0.75),
-                            height: i === 0 ? 30 : Math.max(8, 26 - i * 0.8)
+                            size: i === 0 ? 22 : Math.max(5, 20 - i * 0.55)
                         });
                     }
                 }
-                
+
                 update() {
-                    this.angle += 0.04;
+                    this.waveTime += 0.03;
                     
-                    if (mouse.active) {
-                        this.targetX = mouse.x;
-                        this.targetY = mouse.y;
-                    } else {
-                        if (Date.now() - this.changeDirTime > 3000) {
-                            this.targetX = 150 + Math.random() * (width - 300);
-                            this.targetY = 120 + Math.random() * (height - 240);
-                            this.changeDirTime = Date.now();
-                        }
-                    }
+                    // Autonomous Natural Meandering Path (No Mouse Control)
+                    this.moveAngle += (Math.sin(this.waveTime * 0.8) * 0.02) + ((Math.random() - 0.5) * 0.015);
                     
-                    const dx = this.targetX - this.headX;
-                    const dy = this.targetY - this.headY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (dist > 10) {
-                        const moveAngle = Math.atan2(dy, dx);
-                        this.headX += Math.cos(moveAngle) * this.speed + Math.sin(this.angle) * 1.8;
-                        this.headY += Math.sin(moveAngle) * this.speed + Math.cos(this.angle * 1.3) * 1.8;
-                        this.segments[0].angle = moveAngle;
-                    }
-                    
+                    // Move Head
+                    this.headX += Math.cos(this.moveAngle) * this.speed;
+                    this.headY += Math.sin(this.moveAngle) * this.speed;
+
+                    // Seamless Torus Wrap Around Screen Boundaries (Không bức tường)
+                    const padding = 60;
+                    if (this.headX < -padding) this.headX = width + padding;
+                    if (this.headX > width + padding) this.headX = -padding;
+                    if (this.headY < -padding) this.headY = height + padding;
+                    if (this.headY > height + padding) this.headY = -padding;
+
                     this.segments[0].x = this.headX;
                     this.segments[0].y = this.headY;
-                    
+                    this.segments[0].angle = this.moveAngle;
+
+                    // Follow Inverse Kinematics with S-curve Wave
                     for (let i = 1; i < this.numSegments; i++) {
-                        const segDx = this.segments[i-1].x - this.segments[i].x;
-                        const segDy = this.segments[i-1].y - this.segments[i].y;
+                        let segDx = this.segments[i-1].x - this.segments[i].x;
+                        let segDy = this.segments[i-1].y - this.segments[i].y;
+
+                        // Handle Wrap Gap in Segment Distance
+                        if (Math.abs(segDx) > width / 2) segDx -= Math.sign(segDx) * width;
+                        if (Math.abs(segDy) > height / 2) segDy -= Math.sign(segDy) * height;
+
                         const segDist = Math.sqrt(segDx * segDx + segDy * segDy);
-                        const targetDist = 18;
-                        
+                        const targetDist = 16;
+
                         if (segDist > 0) {
                             const angle = Math.atan2(segDy, segDx);
-                            const waveOffset = Math.sin(this.angle * 2.5 - i * 0.35) * 3;
-                            this.segments[i].x = this.segments[i-1].x - Math.cos(angle) * targetDist + Math.sin(angle) * waveOffset;
-                            this.segments[i].y = this.segments[i-1].y - Math.sin(angle) * targetDist - Math.cos(angle) * waveOffset;
+                            const sineWave = Math.sin(this.waveTime * 2.5 - i * 0.3) * 2.5;
+                            
+                            this.segments[i].x = this.segments[i-1].x - Math.cos(angle) * targetDist + Math.sin(angle) * sineWave;
+                            this.segments[i].y = this.segments[i-1].y - Math.sin(angle) * targetDist - Math.cos(angle) * sineWave;
                             this.segments[i].angle = angle;
+
+                            // Wrap Body Segments gracefully
+                            if (this.segments[i].x < -padding) this.segments[i].x += width + padding * 2;
+                            if (this.segments[i].x > width + padding) this.segments[i].x -= width + padding * 2;
+                            if (this.segments[i].y < -padding) this.segments[i].y += height + padding * 2;
+                            if (this.segments[i].y > height + padding) this.segments[i].y -= height + padding * 2;
                         }
                     }
                 }
-                
-                draw(ctx) {
+
+                drawDragonInstance(ctx, offsetX, offsetY) {
                     ctx.save();
-                    
-                    // 1. Draw Body Spine Connection Line
+                    ctx.translate(offsetX, offsetY);
+
+                    // 1. Draw Body Spine & Calligraphic Flames (Gold & Pearl White)
                     ctx.beginPath();
                     ctx.moveTo(this.segments[0].x, this.segments[0].y);
                     for (let i = 1; i < this.numSegments; i++) {
                         ctx.lineTo(this.segments[i].x, this.segments[i].y);
                     }
-                    ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
-                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = 'rgba(254, 240, 138, 0.35)';
+                    ctx.lineWidth = 14;
+                    ctx.lineCap = 'round';
                     ctx.stroke();
 
-                    // 2. Draw Angular Body Armor Plates (Tail to Head)
+                    // 2. Render Dragon Body & Scales (Tail to Head)
                     for (let i = this.numSegments - 1; i >= 1; i--) {
                         const seg = this.segments[i];
                         ctx.save();
                         ctx.translate(seg.x, seg.y);
                         ctx.rotate(seg.angle);
-                        
-                        const w = seg.width;
-                        const h = seg.height;
-                        
-                        // Sharp Diamond Armor Scale
-                        ctx.beginPath();
-                        ctx.moveTo(w / 2, 0);               // Front tip
-                        ctx.lineTo(0, -h / 2);              // Top corner
-                        ctx.lineTo(-w / 2, 0);              // Back tip
-                        ctx.lineTo(0, h / 2);               // Bottom corner
-                        ctx.closePath();
-                        
-                        const scaleGrad = ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+
+                        const r = seg.size;
+
+                        // Crest/Mane Tuft behind segment
                         if (i % 2 === 0) {
-                            scaleGrad.addColorStop(0, '#ffffff');
-                            scaleGrad.addColorStop(0.5, '#fef08a');
-                            scaleGrad.addColorStop(1, '#f59e0b');
+                            ctx.beginPath();
+                            ctx.moveTo(-r, 0);
+                            ctx.quadraticCurveTo(-r - 12, -r - 10, -r - 22, -r - 6);
+                            ctx.quadraticCurveTo(-r - 8, -r + 2, -r, 0);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.shadowColor = '#fbbf24';
+                            ctx.shadowBlur = 10;
+                            ctx.fill();
+                        }
+
+                        // Dragon Body Segment Circle / Scale Gradient
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, 0, Math.PI * 2);
+                        
+                        const grad = ctx.createRadialGradient(-r*0.3, -r*0.3, r*0.1, 0, 0, r);
+                        if (i % 2 === 0) {
+                            grad.addColorStop(0, '#ffffff');
+                            grad.addColorStop(0.5, '#fef08a');
+                            grad.addColorStop(1, '#f59e0b');
                         } else {
-                            scaleGrad.addColorStop(0, '#fbbf24');
-                            scaleGrad.addColorStop(0.5, '#ffffff');
-                            scaleGrad.addColorStop(1, '#d97706');
+                            grad.addColorStop(0, '#fef08a');
+                            grad.addColorStop(0.6, '#ffffff');
+                            grad.addColorStop(1, '#d97706');
                         }
                         
-                        ctx.fillStyle = scaleGrad;
-                        ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
-                        ctx.shadowBlur = 12;
+                        ctx.fillStyle = grad;
+                        ctx.shadowColor = 'rgba(251, 191, 36, 0.6)';
+                        ctx.shadowBlur = 14;
                         ctx.fill();
-                        
+
                         ctx.strokeStyle = '#ffffff';
                         ctx.lineWidth = 1.2;
                         ctx.stroke();
-                        
-                        // Sharp Triangular Fin Spike on Back
-                        if (i % 2 === 0 && i < this.numSegments - 2) {
-                            ctx.beginPath();
-                            ctx.moveTo(-w / 4, -h / 2);
-                            ctx.lineTo(0, -h / 2 - 14);
-                            ctx.lineTo(w / 4, -h / 2);
-                            ctx.closePath();
-                            ctx.fillStyle = '#fef08a';
-                            ctx.fill();
-                            ctx.strokeStyle = '#f59e0b';
-                            ctx.lineWidth = 1;
-                            ctx.stroke();
-                        }
-                        
+
                         ctx.restore();
                     }
-                    
-                    // 3. Draw Sharp 2D Angular Dragon Head
+
+                    // 3. Render Imperial Oriental Dragon Head (Đầu Rồng Đông Phương Thần Thoại)
                     const head = this.segments[0];
                     ctx.save();
                     ctx.translate(head.x, head.y);
                     ctx.rotate(head.angle);
-                    
-                    // Sharp Polygonal Crown & Jaws
+
+                    // Head Base Shape
                     ctx.beginPath();
-                    ctx.moveTo(28, 0);          // Snout tip
-                    ctx.lineTo(12, -14);       // Upper cheek
-                    ctx.lineTo(-10, -18);      // Crown top
-                    ctx.lineTo(-20, -10);      // Neck top
-                    ctx.lineTo(-20, 10);       // Neck bottom
-                    ctx.lineTo(-10, 18);       // Crown bottom
-                    ctx.lineTo(12, 14);        // Lower cheek
+                    ctx.moveTo(34, 0);                 // Long Snout
+                    ctx.quadraticCurveTo(18, -16, -12, -18); // Upper Jaw & Crown
+                    ctx.lineTo(-24, -10);              // Back Head
+                    ctx.lineTo(-24, 10);
+                    ctx.quadraticCurveTo(18, 16, 34, 0);  // Lower Jaw
                     ctx.closePath();
-                    
-                    const headGrad = ctx.createLinearGradient(-20, -18, 28, 18);
+
+                    const headGrad = ctx.createLinearGradient(-24, -18, 34, 18);
                     headGrad.addColorStop(0, '#ffffff');
                     headGrad.addColorStop(0.4, '#fef08a');
                     headGrad.addColorStop(0.8, '#f59e0b');
                     headGrad.addColorStop(1, '#b45309');
-                    
+
                     ctx.fillStyle = headGrad;
-                    ctx.shadowColor = 'rgba(251, 191, 36, 0.8)';
-                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 24;
                     ctx.fill();
-                    
                     ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 1.8;
-                    ctx.stroke();
-                    
-                    // Sharp Angular Antlers / Horns
-                    ctx.beginPath();
-                    ctx.moveTo(-6, -16);
-                    ctx.lineTo(-18, -32);
-                    ctx.lineTo(-26, -28);
-                    ctx.lineTo(-14, -14);
-                    
-                    ctx.moveTo(-6, 16);
-                    ctx.lineTo(-18, 32);
-                    ctx.lineTo(-26, 28);
-                    ctx.lineTo(-14, 14);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fill();
-                    ctx.strokeStyle = '#f59e0b';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    
-                    // Sharp Slit Dragon Eyes
-                    ctx.beginPath();
-                    ctx.moveTo(10, -6);
-                    ctx.lineTo(18, -4);
-                    ctx.lineTo(8, -2);
-                    ctx.closePath();
-                    
-                    ctx.moveTo(10, 6);
-                    ctx.lineTo(18, 4);
-                    ctx.lineTo(8, 2);
-                    ctx.closePath();
-                    
-                    ctx.fillStyle = '#ffffff';
-                    ctx.shadowColor = '#ffffff';
-                    ctx.shadowBlur = 10;
-                    ctx.fill();
-                    
-                    // Sharp Angular Whiskers
-                    const wWave = Math.sin(this.angle * 5) * 6;
-                    ctx.beginPath();
-                    ctx.moveTo(22, -4);
-                    ctx.lineTo(38, -16 + wWave);
-                    ctx.lineTo(52, -10 + wWave);
-                    ctx.moveTo(22, 4);
-                    ctx.lineTo(38, 16 - wWave);
-                    ctx.lineTo(52, 10 - wWave);
-                    ctx.strokeStyle = '#fef08a';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                    
+
+                    // Imperial Antlers (Sừng Rồng Phân Nhánh)
+                    ctx.beginPath();
+                    // Top Antler
+                    ctx.moveTo(-8, -16);
+                    ctx.quadraticCurveTo(-22, -38, -34, -42);
+                    ctx.quadraticCurveTo(-24, -30, -18, -20);
+                    // Bottom Antler
+                    ctx.moveTo(-8, 16);
+                    ctx.quadraticCurveTo(-22, 38, -34, 42);
+                    ctx.quadraticCurveTo(-24, 30, -18, 20);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#ffffff';
+                    ctx.shadowBlur = 12;
+                    ctx.fill();
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1.8;
+                    ctx.stroke();
+
+                    // Flowing Dragon Mane (Bờm Rồng)
+                    ctx.beginPath();
+                    ctx.moveTo(-16, -14);
+                    ctx.quadraticCurveTo(-36, -26, -50, -18);
+                    ctx.quadraticCurveTo(-32, -10, -22, -8);
+                    ctx.moveTo(-16, 14);
+                    ctx.quadraticCurveTo(-36, 26, -50, 18);
+                    ctx.quadraticCurveTo(-32, 10, -22, 8);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+
+                    // Dragon Glowing Eyes
+                    ctx.beginPath();
+                    ctx.ellipse(14, -7, 4, 2.5, Math.PI / 6, 0, Math.PI * 2);
+                    ctx.ellipse(14, 7, 4, 2.5, -Math.PI / 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#ffffff';
+                    ctx.shadowBlur = 12;
+                    ctx.fill();
+
+                    // Long Oriental Whiskers (Râu Rồng Đông Phương Uốn Lượn)
+                    const wWave = Math.sin(this.waveTime * 4) * 8;
+                    ctx.beginPath();
+                    ctx.moveTo(28, -5);
+                    ctx.bezierCurveTo(46, -22 + wWave, 62, -10, 78, -18 + wWave);
+                    ctx.moveTo(28, 5);
+                    ctx.bezierCurveTo(46, 22 - wWave, 62, 10, 78, 18 - wWave);
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.lineWidth = 2.2;
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 10;
+                    ctx.stroke();
+
                     ctx.restore();
                     ctx.restore();
                 }
+
+                draw(ctx) {
+                    // Draw Dragon instance and wrap ghosts for 100% seamless boundary transition
+                    const offsets = [
+                        [0, 0],
+                        [-width, 0], [width, 0], [0, -height], [0, height],
+                        [-width, -height], [width, -height], [-width, height], [width, height]
+                    ];
+
+                    offsets.forEach(([ox, oy]) => {
+                        this.drawDragonInstance(ctx, ox, oy);
+                    });
+                }
             }
 
-            const dragon = new SharpGoldenDragon();
+            const dragon = new EasternImperialDragon();
             
-            // Ambient Floating Stardust & Embers
+            // Ambient Floating Golden Stardust
             const sparkles = [];
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 35; i++) {
                 sparkles.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
                     size: Math.random() * 3 + 1,
-                    speedY: -Math.random() * 0.6 - 0.2,
+                    speedY: -Math.random() * 0.5 - 0.2,
                     opacity: Math.random() * 0.7 + 0.2
                 });
             }
@@ -509,7 +510,7 @@
             function render() {
                 ctx.clearRect(0, 0, width, height);
                 
-                // Draw Ambient Stardust
+                // Render Ambient Stardust
                 sparkles.forEach(s => {
                     s.y += s.speedY;
                     if (s.y < -10) s.y = height + 10;
@@ -519,7 +520,7 @@
                     ctx.fill();
                 });
                 
-                // Update & Render Sharp 2D Golden White Dragon
+                // Update & Render Eastern Imperial Dragon
                 dragon.update();
                 dragon.draw(ctx);
                 
