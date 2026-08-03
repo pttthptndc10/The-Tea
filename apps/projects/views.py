@@ -117,10 +117,12 @@ def project_create_view(request):
     else:
         form = ProjectForm()
 
+    all_users = User.objects.filter(status=User.Status.ACTIVE).order_by('full_name', 'email')
     return render(request, 'projects/project_form.html', {
         'form': form,
         'title': 'Tạo Dự Án Mới',
-        'is_create': True
+        'is_create': True,
+        'all_users': all_users,
     })
 
 
@@ -154,14 +156,21 @@ def project_edit_view(request, project_id):
 
             messages.success(request, f"Cập nhật dự án '{project.name}' thành công!")
             return redirect('projects:detail', project_id=project.id)
+        else:
+            messages.error(request, "Vui lòng kiểm tra lại thông tin nhập liệu.")
     else:
         form = ProjectForm(instance=project)
+
+    all_users = User.objects.filter(status=User.Status.ACTIVE).order_by('full_name', 'email')
+    current_member_ids = list(ProjectMember.objects.filter(project=project).values_list('user_id', flat=True))
 
     return render(request, 'projects/project_form.html', {
         'form': form,
         'project': project,
-        'title': f"Chỉnh Sửa Dự Án: {project.name}",
-        'is_create': False
+        'title': f'Sửa Dự Án: {project.name}',
+        'is_create': False,
+        'all_users': all_users,
+        'current_member_ids': current_member_ids,
     })
 
 
