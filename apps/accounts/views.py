@@ -67,6 +67,8 @@ def register_step1_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard:index')
 
+    form = RegisterStep1Form(request.POST if request.method == 'POST' else None)
+
     if request.method == 'POST':
         email = request.POST.get('email', '').lower().strip()
         full_name = request.POST.get('full_name', '').strip()
@@ -78,21 +80,19 @@ def register_step1_view(request):
             # Complete registration in single screen
             if password != confirm_password:
                 messages.error(request, "Mật khẩu xác nhận không trùng khớp.")
-                return render(request, 'accounts/register.html', {'form': RegisterStep1Form(request.POST)})
-
-            success, result = AuthService.verify_registration_otp(
-                email=email,
-                otp_code=otp_code,
-                password=password,
-                full_name=full_name
-            )
-            if success:
-                messages.success(request, "Đăng ký tài khoản thành công! Vui lòng đăng nhập.")
-                return redirect('accounts:login')
             else:
-                messages.error(request, result)
+                success, result = AuthService.verify_registration_otp(
+                    email=email,
+                    otp_code=otp_code,
+                    password=password,
+                    full_name=full_name
+                )
+                if success:
+                    messages.success(request, "Đăng ký tài khoản thành công! Vui lòng đăng nhập.")
+                    return redirect('accounts:login')
+                else:
+                    messages.error(request, result)
         else:
-            form = RegisterStep1Form(request.POST)
             if form.is_valid():
                 success, msg = AuthService.send_registration_otp(email)
                 if success:
@@ -101,8 +101,6 @@ def register_step1_view(request):
                     messages.error(request, msg)
             else:
                 messages.error(request, "Vui lòng kiểm tra lại thông tin đăng ký.")
-    else:
-        form = RegisterStep1Form()
 
     return render(request, 'accounts/register.html', {'form': form})
 
@@ -120,6 +118,8 @@ def forgot_password_step1_view(request):
     """
     if request.user.is_authenticated:
         return redirect('dashboard:index')
+
+    form = ForgotPasswordForm(request.POST if request.method == 'POST' else None)
 
     if request.method == 'POST':
         email = request.POST.get('email', '').lower().strip()
@@ -139,7 +139,6 @@ def forgot_password_step1_view(request):
                 else:
                     messages.error(request, r_msg)
         else:
-            form = ForgotPasswordForm(request.POST)
             if form.is_valid():
                 success, msg = AuthService.send_forgot_password_otp(email)
                 if success:
@@ -148,8 +147,6 @@ def forgot_password_step1_view(request):
                     messages.error(request, msg)
             else:
                 messages.error(request, "Vui lòng nhập Email hợp lệ.")
-    else:
-        form = ForgotPasswordForm()
 
     return render(request, 'accounts/forgot_password.html', {'form': form})
 
