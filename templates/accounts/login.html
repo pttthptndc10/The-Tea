@@ -3,14 +3,20 @@
 {% block title %}Đăng Nhập - The Tea{% endblock %}
 
 {% block guest_content %}
-<div class="w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-pink-100/80 space-y-6">
-    <!-- Logo & Brand Header -->
+<div id="loginCardContainer" class="w-full max-w-md bg-white/95 backdrop-blur-2xl p-8 rounded-3xl shadow-2xl border border-emerald-500/20 space-y-6 transition-transform duration-200 ease-out">
+    <!-- Logo & Brand Header: Shield + Tea Leaf -->
     <div class="text-center space-y-2">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-400 text-white text-2xl shadow-lg shadow-pink-500/30 mb-2">
-            <i class="fa-solid fa-heart"></i>
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-700 via-teal-600 to-emerald-400 text-white shadow-xl shadow-emerald-900/30 p-1 mb-2 transform transition hover:scale-105">
+            <div class="w-full h-full bg-emerald-950/60 rounded-xl backdrop-blur flex items-center justify-center">
+                <svg class="w-9 h-9 text-emerald-300 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" opacity="0.3"/>
+                    <path d="M12 2.5L4.5 5.8v5.2c0 4.8 3.3 9.3 7.5 10.4 4.2-1.1 7.5-5.6 7.5-10.4V5.8L12 2.5z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M12 6c-2.8 0-5 2.2-5 5 0 3.3 3.6 6.2 5 7.1 1.4-.9 5-3.8 5-7.1 0-2.8-2.2-5-5-5zm0 10c-1.2-.8-3.3-3.2-3.3-4.8 0-1.8 1.5-3.3 3.3-3.3s3.3 1.5 3.3 3.3c0 1.6-2.1 4-3.3 4.8z" fill="#34d399"/>
+                </svg>
+            </div>
         </div>
-        <h1 class="text-2xl font-bold bg-gradient-to-r from-pink-700 to-rose-600 bg-clip-text text-transparent tracking-tight">The Tea</h1>
-        <p class="text-sm text-pink-400 font-medium">Hệ Thống Quản Lý Dự Án Nội Bộ</p>
+        <h1 class="text-3xl font-black bg-gradient-to-r from-emerald-800 via-teal-700 to-emerald-600 bg-clip-text text-transparent tracking-tight">The Tea</h1>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Hệ Thống Quản Lý Dự Án & Linh Kiện</p>
     </div>
 
     <!-- Login Form -->
@@ -18,10 +24,10 @@
         {% csrf_token %}
         
         <div>
-            <label for="id_email" class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+            <label for="id_email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Email Tài Khoản</label>
             <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <i class="fa-regular fa-envelope"></i>
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                    <i class="fa-regular fa-envelope text-xs"></i>
                 </span>
                 {{ form.email }}
             </div>
@@ -32,12 +38,12 @@
 
         <div>
             <div class="flex items-center justify-between mb-1">
-                <label for="id_password" class="block text-sm font-semibold text-slate-700">Mật khẩu</label>
-                <a href="{% url 'accounts:forgot_password' %}" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">Quên mật khẩu?</a>
+                <label for="id_password" class="block text-xs font-bold uppercase tracking-wider text-slate-700">Mật khẩu</label>
+                <a href="{% url 'accounts:forgot_password' %}" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 hover:underline">Quên mật khẩu?</a>
             </div>
             <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <i class="fa-solid fa-lock"></i>
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                    <i class="fa-solid fa-lock text-xs"></i>
                 </span>
                 {{ form.password }}
             </div>
@@ -49,20 +55,35 @@
         <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 cursor-pointer">
                 {{ form.remember_me }}
-                <span class="text-sm text-slate-600">Ghi nhớ đăng nhập</span>
+                <span class="text-xs font-semibold text-slate-600">Ghi nhớ đăng nhập</span>
             </label>
         </div>
 
-        <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition duration-200">
-            Đăng Nhập
+        <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 transition duration-200">
+            Đăng Nhập <i class="fa-solid fa-arrow-right-to-bracket ml-1.5"></i>
         </button>
     </form>
 
     <div class="text-center pt-2 border-t border-slate-100">
-        <p class="text-sm text-slate-500">
-            Bạn nhận được lời mời từ Admin? 
-            <a href="{% url 'accounts:register' %}" class="font-semibold text-brand-600 hover:underline">Đăng ký tại đây</a>
+        <p class="text-xs font-medium text-slate-500">
+            Bạn muốn tạo tài khoản mới? 
+            <a href="{% url 'accounts:register' %}" class="font-bold text-emerald-600 hover:underline">Đăng ký tại đây</a>
         </p>
     </div>
 </div>
+
+<script>
+    // 3D Card Interactive Tilt Effect following mouse position
+    const card = document.getElementById('loginCardContainer');
+    if (card) {
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 45;
+            const y = (window.innerHeight / 2 - e.clientY) / 45;
+            card.style.transform = `perspective(1000px) rotateY(${-x}deg) rotateX(${y}deg)`;
+        });
+        document.addEventListener('mouseleave', () => {
+            card.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg)`;
+        });
+    }
+</script>
 {% endblock %}
