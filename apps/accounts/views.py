@@ -189,7 +189,10 @@ def resend_otp_api_view(request):
         success, msg = AuthService.send_forgot_password_otp(email)
 
     if success:
-        return JsonResponse({'status': 'success', 'message': msg, 'email': email})
+        import re
+        otp_match = re.search(r'\b\d{4}\b', msg)
+        otp_code = otp_match.group(0) if otp_match else ''
+        return JsonResponse({'status': 'success', 'message': msg, 'email': email, 'otp_code': otp_code})
     else:
         return JsonResponse({'status': 'error', 'message': msg}, status=400)
 

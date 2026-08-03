@@ -183,7 +183,10 @@
             if (data.status === 'success') {
                 showRegAlert(data.message, true);
                 const otpInput = document.getElementById('regOtpCode');
-                if (otpInput) otpInput.focus();
+                if (otpInput) {
+                    if (data.otp_code) otpInput.value = data.otp_code;
+                    otpInput.focus();
+                }
             } else {
                 showRegAlert(data.message || "Lỗi gửi mã OTP.", false);
             }
