@@ -5,20 +5,28 @@ class LoginForm(forms.Form):
     email = forms.EmailField(
         label="Email",
         widget=forms.EmailInput(attrs={
+            'id': 'id_email',
             'placeholder': 'name@company.com',
-            'class': 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm'
+            'class': 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm',
+            'autocomplete': 'off'
         })
     )
     password = forms.CharField(
         label="Mật khẩu",
         widget=forms.PasswordInput(attrs={
+            'id': 'id_password',
             'placeholder': '••••••••',
-            'class': 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm'
+            'class': 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm',
+            'autocomplete': 'new-password'
         })
     )
     remember_me = forms.BooleanField(
         required=False,
-        label="Ghi nhớ đăng nhập"
+        label="Ghi nhớ đăng nhập",
+        widget=forms.CheckboxInput(attrs={
+            'id': 'id_remember_me',
+            'class': 'w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 transition cursor-pointer'
+        })
     )
 
 

@@ -73,15 +73,52 @@
 </div>
 
 <script>
-    // Clear any stale navigation flag on login page
-    sessionStorage.removeItem('nav_internal');
+    document.addEventListener('DOMContentLoaded', function() {
+        sessionStorage.removeItem('nav_internal');
 
-    const loginForm = document.querySelector('form[action="{% url 'accounts:login' %}"]');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function() {
-            sessionStorage.setItem('nav_internal', '1');
-        });
-    }
+        const emailInput = document.getElementById('id_email');
+        const passwordInput = document.getElementById('id_password');
+        const rememberCheckbox = document.getElementById('id_remember_me');
+        const loginForm = document.querySelector('form[action="{% url 'accounts:login' %}"]');
+
+        // Check if user previously checked "Ghi nhớ đăng nhập"
+        const isRemembered = localStorage.getItem('remember_me_checked') === 'true';
+
+        if (isRemembered && emailInput && passwordInput && rememberCheckbox) {
+            emailInput.value = localStorage.getItem('saved_email') || '';
+            passwordInput.value = localStorage.getItem('saved_password') || '';
+            rememberCheckbox.checked = true;
+        } else {
+            // Force clear fields if user chose NOT to remember
+            if (emailInput) emailInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+            if (rememberCheckbox) rememberCheckbox.checked = false;
+
+            // Secondary clear to prevent browser native autofill from forcing saved passwords when unchecked
+            setTimeout(() => {
+                if (localStorage.getItem('remember_me_checked') !== 'true') {
+                    if (emailInput && !rememberCheckbox.checked) emailInput.value = '';
+                    if (passwordInput && !rememberCheckbox.checked) passwordInput.value = '';
+                }
+            }, 100);
+        }
+
+        // On form submit, save or clear credentials based on checkbox state
+        if (loginForm) {
+            loginForm.addEventListener('submit', function() {
+                sessionStorage.setItem('nav_internal', '1');
+                if (rememberCheckbox && rememberCheckbox.checked) {
+                    localStorage.setItem('saved_email', (emailInput.value || '').trim());
+                    localStorage.setItem('saved_password', passwordInput.value || '');
+                    localStorage.setItem('remember_me_checked', 'true');
+                } else {
+                    localStorage.removeItem('saved_email');
+                    localStorage.removeItem('saved_password');
+                    localStorage.removeItem('remember_me_checked');
+                }
+            });
+        }
+    });
 
     // 3D Card Interactive Tilt Effect following mouse position
     const card = document.getElementById('loginCardContainer');
