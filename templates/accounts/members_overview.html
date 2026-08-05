@@ -363,13 +363,37 @@
     function fetchDirectMessages() {
         if (!activeChatUserId) return;
         fetch(`/accounts/api/messages/${activeChatUserId}/`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     renderChatMessages(data.messages, data.target_user);
+                } else {
+                    showChatError(data.message || "Không thể tải tin nhắn.");
                 }
             })
-            .catch(err => console.error("Error fetching messages:", err));
+            .catch(err => {
+                console.error("Error fetching messages:", err);
+                const box = document.getElementById('chatMessagesBox');
+                if (box && box.querySelector('.animate-spin')) {
+                    showChatError("Bắt đầu cuộc trò chuyện. Hãy gửi tin nhắn bên dưới.");
+                }
+            });
+    }
+
+    function showChatError(msg) {
+        const box = document.getElementById('chatMessagesBox');
+        if (!box) return;
+        box.innerHTML = `
+            <div class="text-center py-8 space-y-2">
+                <span class="text-xs font-bold text-pink-600 bg-pink-50 border border-pink-200 px-3.5 py-1.5 rounded-full inline-block">
+                    ${escapeHtml(msg)}
+                </span>
+                <p class="text-[11px] text-slate-400">Hãy nhập và gửi tin nhắn đầu tiên bên dưới.</p>
+            </div>
+        `;
     }
 
     function renderChatMessages(messages, targetUser) {
@@ -378,7 +402,7 @@
             box.innerHTML = `
                 <div class="text-center py-8 space-y-2">
                     <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full inline-block">
-                        Bắt đầu cuộc trò chuyện với ${escapeHtml(targetUser.name)}
+                        Bắt đầu cuộc trò chuyện với ${escapeHtml(targetUser ? targetUser.name : 'thành viên')}
                     </span>
                     <p class="text-[11px] text-slate-400">Hãy nhắn tin để trao đổi công việc trực tiếp.</p>
                 </div>
@@ -413,7 +437,7 @@
                 html += `
                     <div class="flex items-start gap-2.5">
                         <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
-                            ${m.sender_initial}
+                            ${m.sender_initial || 'U'}
                         </div>
                         <div class="space-y-1 max-w-[80%]">
                             <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs text-xs text-slate-700 font-medium">
@@ -440,6 +464,34 @@
 
         const csrfToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
+        // Optimistic UI Append
+        const box = document.getElementById('chatMessagesBox');
+        if (box.querySelector('.animate-spin') || box.querySelector('.text-center')) {
+            box.innerHTML = `
+                <div class="text-center py-1 mb-2">
+                    <span class="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-3 py-1 rounded-full">
+                        Cuộc trò chuyện trực tiếp
+                    </span>
+                </div>
+            `;
+        }
+        const tempMsg = document.createElement('div');
+        tempMsg.className = 'flex items-start justify-end gap-2.5 opacity-70';
+        tempMsg.innerHTML = `
+            <div class="space-y-1 text-right max-w-[80%]">
+                <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium text-left">
+                    ${escapeHtml(text)}
+                </div>
+                <span class="text-[9px] text-slate-400 block px-1">Vừa xong</span>
+            </div>
+            <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+                Tôi
+            </div>
+        `;
+        box.appendChild(tempMsg);
+        box.scrollTop = box.scrollHeight;
+        input.value = '';
+
         fetch('/accounts/api/messages/send/', {
             method: 'POST',
             headers: {
@@ -454,7 +506,6 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                input.value = '';
                 fetchDirectMessages();
             } else {
                 alert(data.message || 'Có lỗi xảy ra khi gửi tin nhắn.');
@@ -484,4 +535,5 @@
     }
 </script>
 {% endblock %}
+
 
