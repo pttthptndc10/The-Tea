@@ -258,12 +258,15 @@
                 {% if messages %}
                 <div class="mb-6 space-y-3">
                     {% for message in messages %}
-                    <div class="p-4 rounded-xl border flex items-center justify-between shadow-sm transition
+                    <div class="flash-msg-item p-4 rounded-xl border flex items-center justify-between shadow-sm transition-all duration-500 opacity-100 transform translate-y-0
                         {% if message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-800{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800{% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800{% else %}bg-sky-50 border-sky-200 text-sky-800{% endif %}">
                         <div class="flex items-center gap-3">
                             <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation text-rose-500{% elif message.tags == 'success' %}fa-circle-check text-emerald-500{% else %}fa-circle-info text-sky-500{% endif %}"></i>
                             <span class="text-sm font-medium">{{ message }}</span>
                         </div>
+                        <button onclick="dismissFlashMessage(this)" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition" title="Đóng">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
                     </div>
                     {% endfor %}
                 </div>
@@ -288,8 +291,14 @@
             {% if messages %}
             <div class="mb-4 space-y-2">
                 {% for message in messages %}
-                <div class="p-4 rounded-2xl border flex items-center justify-between shadow-2xl backdrop-blur-xl bg-white/90 border-pink-500/20 text-slate-800">
-                    <span class="text-xs font-semibold">{{ message }}</span>
+                <div class="flash-msg-item p-4 rounded-2xl border flex items-center justify-between shadow-2xl backdrop-blur-xl bg-white/90 border-pink-500/20 text-slate-800 transition-all duration-500 opacity-100 transform translate-y-0">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation text-rose-500{% elif message.tags == 'success' %}fa-circle-check text-emerald-500{% else %}fa-circle-info text-pink-500{% endif %}"></i>
+                        <span class="text-xs font-semibold">{{ message }}</span>
+                    </div>
+                    <button onclick="dismissFlashMessage(this)" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition" title="Đóng">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
                 </div>
                 {% endfor %}
             </div>
@@ -926,6 +935,30 @@
                 main.classList.add('relative');
                 main.appendChild(overlay);
             }
+        });
+    </script>
+    <script>
+        // Global Auto-Dismiss & Smooth Close for System Flash Messages
+        function dismissFlashMessage(btnOrEl) {
+            const msgBox = btnOrEl.closest ? btnOrEl.closest('.flash-msg-item') : btnOrEl;
+            if (msgBox) {
+                msgBox.style.opacity = '0';
+                msgBox.style.transform = 'translateY(-8px)';
+                msgBox.style.maxHeight = '0px';
+                msgBox.style.marginBottom = '0px';
+                msgBox.style.paddingTop = '0px';
+                msgBox.style.paddingBottom = '0px';
+                msgBox.style.overflow = 'hidden';
+                setTimeout(() => msgBox.remove(), 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.querySelectorAll('.flash-msg-item').forEach(function(item) {
+                    dismissFlashMessage(item);
+                });
+            }, 3500);
         });
     </script>
     {% block extra_js %}{% endblock %}
