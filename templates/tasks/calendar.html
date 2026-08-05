@@ -13,12 +13,28 @@
             <!-- View Mode Toggle Buttons -->
             <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80">
                 <button type="button" id="viewMonthBtn" onclick="switchCalendarView('MONTH')" 
-                        class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white">
-                    <i class="fa-solid fa-calendar-days mr-1.5"></i>Theo Tháng
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white">
+                    <i class="fa-solid fa-calendar-days mr-1"></i>Theo Tháng
                 </button>
                 <button type="button" id="viewWeekBtn" onclick="switchCalendarView('WEEK')" 
-                        class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600">
-                    <i class="fa-solid fa-calendar-week mr-1.5"></i>Theo Tuần
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600">
+                    <i class="fa-solid fa-calendar-week mr-1"></i>Theo Tuần
+                </button>
+            </div>
+
+            <!-- Task Date Placement Mode Selector (Bắt đầu vs Hạn chót vs Lặp dài) -->
+            <div class="inline-flex p-1 bg-pink-50/80 rounded-xl border border-pink-200 text-xs font-bold">
+                <button type="button" id="modeStartBtn" onclick="switchTaskDisplayMode('START_DATE')" 
+                        class="px-2.5 py-1 rounded-lg transition shadow-2xs bg-gradient-to-r from-pink-600 to-rose-500 text-white" title="Mỗi công việc chỉ xuất hiện 1 lần đúng vào Ngày Bắt Đầu (Gọn đẹp)">
+                    📌 Ngày Bắt Đầu
+                </button>
+                <button type="button" id="modeEndBtn" onclick="switchTaskDisplayMode('END_DATE')" 
+                        class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-pink-600" title="Mỗi công việc chỉ xuất hiện 1 lần đúng vào Ngày Hạn Chót">
+                    🏁 Hạn Chót
+                </button>
+                <button type="button" id="modeAllBtn" onclick="switchTaskDisplayMode('ALL_DAYS')" 
+                        class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-pink-600" title="Công việc hiển thị trải dài liên tục qua tất cả các ngày">
+                    🌊 Trải Dài Tất Cả
                 </button>
             </div>
 
@@ -187,6 +203,7 @@
 
     // Calendar State
     let currentView = 'MONTH'; // 'MONTH' or 'WEEK'
+    let taskDisplayMode = 'START_DATE'; // 'START_DATE', 'END_DATE', 'ALL_DAYS'
     let currentDate = new Date(TODAY_REALTIME_STR);
 
     // Initialize Calendar on Load
@@ -200,12 +217,28 @@
         const weekBtn = document.getElementById('viewWeekBtn');
 
         if (viewMode === 'MONTH') {
-            monthBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
-            weekBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
+            monthBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
+            weekBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
         } else {
-            weekBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
-            monthBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
+            weekBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
+            monthBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
         }
+        renderCalendar();
+    }
+
+    function switchTaskDisplayMode(mode) {
+        taskDisplayMode = mode;
+        const startBtn = document.getElementById('modeStartBtn');
+        const endBtn = document.getElementById('modeEndBtn');
+        const allBtn = document.getElementById('modeAllBtn');
+
+        const activeClass = "px-2.5 py-1 rounded-lg transition shadow-2xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
+        const inactiveClass = "px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-pink-600";
+
+        startBtn.className = (mode === 'START_DATE') ? activeClass : inactiveClass;
+        endBtn.className = (mode === 'END_DATE') ? activeClass : inactiveClass;
+        allBtn.className = (mode === 'ALL_DAYS') ? activeClass : inactiveClass;
+
         renderCalendar();
     }
 
@@ -240,6 +273,19 @@
         }
 
         checkHiddenProjectsAndTasks();
+    }
+
+    function filterTasksForSlot(slotDateStr) {
+        return TASKS_DATA.filter(t => {
+            if (!t.start_date || !t.end_date) return false;
+            if (taskDisplayMode === 'START_DATE') {
+                return slotDateStr === t.start_date;
+            } else if (taskDisplayMode === 'END_DATE') {
+                return slotDateStr === t.end_date;
+            } else {
+                return slotDateStr >= t.start_date && slotDateStr <= t.end_date;
+            }
+        });
     }
 
     function renderMonthView(grid) {
@@ -318,11 +364,7 @@
             const tasksContainer = document.createElement('div');
             tasksContainer.className = "space-y-1.5 flex-1 overflow-y-auto max-h-[100px]";
 
-            // Find tasks spanning or scheduled on slotDateStr
-            const slotTasks = TASKS_DATA.filter(t => {
-                if (!t.start_date || !t.end_date) return false;
-                return slotDateStr >= t.start_date && slotDateStr <= t.end_date;
-            });
+            const slotTasks = filterTasksForSlot(slotDateStr);
 
             slotTasks.forEach(task => {
                 const taskCard = renderTaskBadge(task);
@@ -381,10 +423,7 @@
             const tasksContainer = document.createElement('div');
             tasksContainer.className = "space-y-2 flex-1 overflow-y-auto";
 
-            const slotTasks = TASKS_DATA.filter(t => {
-                if (!t.start_date || !t.end_date) return false;
-                return slotDateStr >= t.start_date && slotDateStr <= t.end_date;
-            });
+            const slotTasks = filterTasksForSlot(slotDateStr);
 
             slotTasks.forEach(task => {
                 const taskCard = renderTaskBadge(task, true);
@@ -418,6 +457,11 @@
             window.location.href = `/projects/${task.project_id}/#task_card_${task.id}`;
         };
 
+        let dateSpanText = '';
+        if (task.start_date && task.end_date && task.start_date !== task.end_date) {
+            dateSpanText = `<span class="text-[9px] font-bold text-slate-500 bg-white/70 px-1 py-0.2 rounded border border-slate-200 block truncate" title="Thời gian thực hiện: ${task.start_date} ➔ ${task.end_date}">📅 ${task.start_date.split('-').slice(1).join('/')} ➔ ${task.end_date.split('-').slice(1).join('/')}</span>`;
+        }
+
         div.innerHTML = `
             <div class="flex items-start justify-between gap-1">
                 <span class="font-bold text-[11px] text-slate-900 group-hover:text-pink-600 transition line-clamp-2 leading-tight">
@@ -425,6 +469,8 @@
                 </span>
             </div>
             
+            ${dateSpanText}
+
             <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[10px]">
                 <button type="button" onclick="toggleInlineProjectExpand('${task.project_id}', '${task.id}', event)" class="font-extrabold text-pink-700 hover:bg-pink-100/80 bg-white/90 px-2 py-0.5 rounded-lg border border-pink-300 truncate max-w-[110px] shadow-2xs transition flex items-center gap-1" title="Bấm để mở rộng phình ra thông tin Dự án tại chỗ">
                     <span>📁 ${escapeHtml(task.project_name)}</span>
