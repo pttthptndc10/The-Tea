@@ -441,6 +441,7 @@ def get_direct_messages_api_view(request, target_user_id):
             'sender_initial': m.sender.initial_letter,
             'is_me': m.sender == request.user,
             'content': m.content,
+            'is_read': m.is_read,
             'created_at': m.created_at.strftime('%H:%M %d/%m')
         }
         for m in msgs

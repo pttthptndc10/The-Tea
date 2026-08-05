@@ -328,9 +328,11 @@
 
     let activeChatUserId = null;
     let chatPollTimer = null;
+    let pendingSendingMessages = [];
 
     function openDirectChatModal(userId, userName, userEmail) {
         activeChatUserId = userId;
+        pendingSendingMessages = [];
         document.getElementById('chatModalUserName').innerText = userName;
         document.getElementById('chatModalUserEmail').innerText = userEmail;
         document.getElementById('chatModalAvatar').innerText = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
@@ -348,7 +350,7 @@
         fetchDirectMessages();
 
         if (chatPollTimer) clearInterval(chatPollTimer);
-        chatPollTimer = setInterval(fetchDirectMessages, 3000);
+        chatPollTimer = setInterval(fetchDirectMessages, 1500); // 1.5s fast polling for Zalo instant feel
     }
 
     function closeDirectChatModal() {
@@ -358,7 +360,11 @@
             chatPollTimer = null;
         }
         activeChatUserId = null;
+        pendingSendingMessages = [];
     }
+
+    let lastFetchedMessages = null;
+    let lastFetchedTargetUser = null;
 
     function fetchDirectMessages() {
         if (!activeChatUserId) return;
@@ -369,6 +375,8 @@
             })
             .then(data => {
                 if (data.status === 'success') {
+                    lastFetchedMessages = data.messages;
+                    lastFetchedTargetUser = data.target_user;
                     renderChatMessages(data.messages, data.target_user);
                 } else {
                     showChatError(data.message || "Không thể tải tin nhắn.");
@@ -398,11 +406,20 @@
 
     function renderChatMessages(messages, targetUser) {
         const box = document.getElementById('chatMessagesBox');
-        if (!messages || messages.length === 0) {
+        if (!box) return;
+
+        const currentMsgs = messages || lastFetchedMessages || [];
+        const currentTarget = targetUser || lastFetchedTargetUser;
+
+        // Clear pending items if present in server list
+        const serverContents = currentMsgs.map(m => m.content);
+        pendingSendingMessages = pendingSendingMessages.filter(p => !serverContents.includes(p.content));
+
+        if (currentMsgs.length === 0 && pendingSendingMessages.length === 0) {
             box.innerHTML = `
                 <div class="text-center py-8 space-y-2">
                     <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full inline-block">
-                        Bắt đầu cuộc trò chuyện với ${escapeHtml(targetUser ? targetUser.name : 'thành viên')}
+                        Bắt đầu cuộc trò chuyện với ${escapeHtml(currentTarget ? currentTarget.name : 'thành viên')}
                     </span>
                     <p class="text-[11px] text-slate-400">Hãy nhắn tin để trao đổi công việc trực tiếp.</p>
                 </div>
@@ -418,15 +435,26 @@
             </div>
         `;
 
-        messages.forEach(m => {
+        currentMsgs.forEach(m => {
             if (m.is_me) {
+                // Status Badge: 'Đã nhận' vs 'Đã gửi'
+                let statusBadge = '';
+                if (m.is_read) {
+                    statusBadge = `<span class="text-[9px] text-emerald-600 font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-check-double text-emerald-500 text-[10px]"></i> Đã nhận</span>`;
+                } else {
+                    statusBadge = `<span class="text-[9px] text-slate-400 font-medium flex items-center justify-end gap-1"><i class="fa-solid fa-check text-slate-400 text-[8px]"></i> Đã gửi</span>`;
+                }
+
                 html += `
                     <div class="flex items-start justify-end gap-2.5">
                         <div class="space-y-1 text-right max-w-[80%]">
                             <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium text-left">
                                 ${escapeHtml(m.content)}
                             </div>
-                            <span class="text-[9px] text-slate-400 block px-1">${m.created_at}</span>
+                            <div class="flex items-center justify-end gap-1.5 px-1">
+                                <span class="text-[9px] text-slate-400">${m.created_at}</span>
+                                ${statusBadge}
+                            </div>
                         </div>
                         <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
                             Tôi
@@ -450,7 +478,27 @@
             }
         });
 
-        const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 60;
+        // Render pending optimistic messages still being transmitted
+        pendingSendingMessages.forEach(p => {
+            html += `
+                <div class="flex items-start justify-end gap-2.5 opacity-80">
+                    <div class="space-y-1 text-right max-w-[80%]">
+                        <div class="bg-gradient-to-r from-pink-600/90 to-rose-500/90 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium text-left">
+                            ${escapeHtml(p.content)}
+                        </div>
+                        <div class="flex items-center justify-end gap-1 px-1 text-[9px] text-pink-500 font-semibold">
+                            <i class="fa-solid fa-spinner animate-spin text-[8px]"></i>
+                            <span>Đang gửi...</span>
+                        </div>
+                    </div>
+                    <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+                        Tôi
+                    </div>
+                </div>
+            `;
+        });
+
+        const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 80;
         box.innerHTML = html;
         if (isScrolledToBottom || box.children.length <= 4) {
             box.scrollTop = box.scrollHeight;
@@ -464,33 +512,17 @@
 
         const csrfToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
-        // Optimistic UI Append
-        const box = document.getElementById('chatMessagesBox');
-        if (box.querySelector('.animate-spin') || box.querySelector('.text-center')) {
-            box.innerHTML = `
-                <div class="text-center py-1 mb-2">
-                    <span class="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-3 py-1 rounded-full">
-                        Cuộc trò chuyện trực tiếp
-                    </span>
-                </div>
-            `;
-        }
-        const tempMsg = document.createElement('div');
-        tempMsg.className = 'flex items-start justify-end gap-2.5 opacity-70';
-        tempMsg.innerHTML = `
-            <div class="space-y-1 text-right max-w-[80%]">
-                <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium text-left">
-                    ${escapeHtml(text)}
-                </div>
-                <span class="text-[9px] text-slate-400 block px-1">Vừa xong</span>
-            </div>
-            <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
-                Tôi
-            </div>
-        `;
-        box.appendChild(tempMsg);
-        box.scrollTop = box.scrollHeight;
+        // 0ms Instant Optimistic Push
+        const pendingObj = {
+            id: 'temp_' + Date.now(),
+            content: text,
+            status: 'sending'
+        };
+        pendingSendingMessages.push(pendingObj);
         input.value = '';
+
+        // Immediate 0ms re-render
+        renderChatMessages(null, null);
 
         fetch('/accounts/api/messages/send/', {
             method: 'POST',
@@ -508,10 +540,16 @@
             if (data.status === 'success') {
                 fetchDirectMessages();
             } else {
+                pendingSendingMessages = pendingSendingMessages.filter(p => p.id !== pendingObj.id);
                 alert(data.message || 'Có lỗi xảy ra khi gửi tin nhắn.');
+                fetchDirectMessages();
             }
         })
-        .catch(err => console.error("Error sending message:", err));
+        .catch(err => {
+            console.error("Error sending message:", err);
+            pendingSendingMessages = pendingSendingMessages.filter(p => p.id !== pendingObj.id);
+            fetchDirectMessages();
+        });
     }
 
     function escapeHtml(str) {
@@ -535,5 +573,6 @@
     }
 </script>
 {% endblock %}
+
 
 
