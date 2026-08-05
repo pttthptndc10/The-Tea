@@ -1,11 +1,13 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from apps.accounts.models import User, Invitation
+from apps.accounts.models import User, Invitation, DirectMessage
 from apps.accounts.forms import (
     LoginForm, RegisterStep1Form, OTPVerifyForm,
     ForgotPasswordForm, ResetPasswordForm, InviteMemberForm
@@ -414,3 +416,98 @@ def transfer_admin_view(request, user_id):
 
     messages.success(request, f"Đã chuyển quyền Admin cho {target_user.email}. Vai trò của bạn hiện là Member.")
     return redirect('dashboard:index')
+
+
+@login_required
+def get_direct_messages_api_view(request, target_user_id):
+    """
+    API View: Fetch all messages between request.user and target_user.
+    """
+    target_user = get_object_or_404(User, id=target_user_id)
+    
+    # Mark messages from target_user to request.user as read
+    DirectMessage.objects.filter(sender=target_user, recipient=request.user, is_read=False).update(is_read=True)
+
+    msgs = DirectMessage.objects.filter(
+        (Q(sender=request.user) & Q(recipient=target_user)) |
+        (Q(sender=target_user) & Q(recipient=request.user))
+    ).select_related('sender').order_by('created_at')
+
+    messages_list = [
+        {
+            'id': str(m.id),
+            'sender_id': str(m.sender.id),
+            'sender_name': m.sender.display_name,
+            'sender_initial': m.sender.initial_letter,
+            'is_me': m.sender == request.user,
+            'content': m.content,
+            'created_at': m.created_at.strftime('%H:%M %d/%m')
+        }
+        for m in msgs
+    ]
+
+    return JsonResponse({
+        'status': 'success',
+        'target_user': {
+            'id': str(target_user.id),
+            'name': target_user.display_name,
+            'email': target_user.email,
+            'initial': target_user.initial_letter
+        },
+        'messages': messages_list
+    })
+
+
+@login_required
+@require_POST
+def send_direct_message_api_view(request):
+    """
+    API View: Send a direct message to a target user.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        data = request.POST
+
+    recipient_id = data.get('recipient_id')
+    content = (data.get('content') or '').strip()
+
+    if not recipient_id or not content:
+        return JsonResponse({'status': 'error', 'message': 'Nội dung tin nhắn không được để trống.'}, status=400)
+
+    recipient = get_object_or_404(User, id=recipient_id)
+
+    if recipient == request.user:
+        return JsonResponse({'status': 'error', 'message': 'Không thể gửi tin nhắn cho chính mình.'}, status=400)
+
+    msg = DirectMessage.objects.create(
+        sender=request.user,
+        recipient=recipient,
+        content=content
+    )
+
+    # Notify recipient
+    try:
+        from apps.notifications.models import Notification
+        Notification.objects.create(
+            user=recipient,
+            title=f"Tin nhắn mới từ {request.user.display_name}",
+            message=content[:100],
+            link="/accounts/members/overview/"
+        )
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'status': 'success',
+        'message': {
+            'id': str(msg.id),
+            'sender_id': str(request.user.id),
+            'sender_name': request.user.display_name,
+            'sender_initial': request.user.initial_letter,
+            'is_me': True,
+            'content': msg.content,
+            'created_at': msg.created_at.strftime('%H:%M %d/%m')
+        }
+    })
+

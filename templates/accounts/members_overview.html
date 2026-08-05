@@ -244,6 +244,7 @@
 
 <!-- Interactive Direct Chat Modal Widget -->
 <div id="directChatModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    {% csrf_token %}
     <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         
         <!-- Modal Header -->
@@ -263,20 +264,10 @@
         </div>
 
         <!-- Chat Messages Container -->
-        <div id="chatMessagesBox" class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3 bg-slate-50/60 min-h-[250px]">
-            <div class="text-center py-2">
-                <span class="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-3 py-1 rounded-full">
-                    Bắt đầu cuộc trò chuyện trực tiếp
-                </span>
-            </div>
-
-            <div class="flex items-start gap-2.5">
-                <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                    S
-                </div>
-                <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs max-w-[80%] text-xs text-slate-700">
-                    Xin chào! Bạn có thể để lại tin nhắn hoặc trao đổi công việc tại đây.
-                </div>
+        <div id="chatMessagesBox" class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3 bg-slate-50/60 min-h-[280px]">
+            <div class="text-center py-8">
+                <i class="fa-solid fa-spinner animate-spin text-pink-600 text-xl"></i>
+                <p class="text-xs text-slate-400 mt-2 font-medium">Đang tải tin nhắn...</p>
             </div>
         </div>
 
@@ -284,7 +275,7 @@
         <div class="p-4 bg-white border-t border-slate-100 space-y-3">
             <div class="flex items-center gap-2">
                 <input type="text" id="chatInputText" onkeypress="if(event.key==='Enter') sendChatMessage();" placeholder="Nhập tin nhắn..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition">
-                <button type="button" onclick="sendChatMessage()" class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                <button type="button" onclick="sendChatMessage()" class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 shrink-0">
                     <span>Gửi</span>
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
@@ -336,57 +327,161 @@
     }
 
     let activeChatUserId = null;
+    let chatPollTimer = null;
 
     function openDirectChatModal(userId, userName, userEmail) {
         activeChatUserId = userId;
         document.getElementById('chatModalUserName').innerText = userName;
         document.getElementById('chatModalUserEmail').innerText = userEmail;
-        document.getElementById('chatModalAvatar').innerText = userEmail.charAt(0).toUpperCase();
+        document.getElementById('chatModalAvatar').innerText = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
         document.getElementById('chatEmailLink').setAttribute('href', 'mailto:' + userEmail);
         document.getElementById('directChatModal').classList.remove('hidden');
+
+        const box = document.getElementById('chatMessagesBox');
+        box.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fa-solid fa-spinner animate-spin text-pink-600 text-xl"></i>
+                <p class="text-xs text-slate-400 mt-2 font-medium">Đang tải tin nhắn...</p>
+            </div>
+        `;
+
+        fetchDirectMessages();
+
+        if (chatPollTimer) clearInterval(chatPollTimer);
+        chatPollTimer = setInterval(fetchDirectMessages, 3000);
     }
 
     function closeDirectChatModal() {
         document.getElementById('directChatModal').classList.add('hidden');
+        if (chatPollTimer) {
+            clearInterval(chatPollTimer);
+            chatPollTimer = null;
+        }
+        activeChatUserId = null;
+    }
+
+    function fetchDirectMessages() {
+        if (!activeChatUserId) return;
+        fetch(`/accounts/api/messages/${activeChatUserId}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderChatMessages(data.messages, data.target_user);
+                }
+            })
+            .catch(err => console.error("Error fetching messages:", err));
+    }
+
+    function renderChatMessages(messages, targetUser) {
+        const box = document.getElementById('chatMessagesBox');
+        if (!messages || messages.length === 0) {
+            box.innerHTML = `
+                <div class="text-center py-8 space-y-2">
+                    <span class="text-xs font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-full inline-block">
+                        Bắt đầu cuộc trò chuyện với ${escapeHtml(targetUser.name)}
+                    </span>
+                    <p class="text-[11px] text-slate-400">Hãy nhắn tin để trao đổi công việc trực tiếp.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div class="text-center py-1 mb-2">
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-3 py-1 rounded-full">
+                    Cuộc trò chuyện trực tiếp
+                </span>
+            </div>
+        `;
+
+        messages.forEach(m => {
+            if (m.is_me) {
+                html += `
+                    <div class="flex items-start justify-end gap-2.5">
+                        <div class="space-y-1 text-right max-w-[80%]">
+                            <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium text-left">
+                                ${escapeHtml(m.content)}
+                            </div>
+                            <span class="text-[9px] text-slate-400 block px-1">${m.created_at}</span>
+                        </div>
+                        <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+                            Tôi
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+                            ${m.sender_initial}
+                        </div>
+                        <div class="space-y-1 max-w-[80%]">
+                            <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs text-xs text-slate-700 font-medium">
+                                ${escapeHtml(m.content)}
+                            </div>
+                            <span class="text-[9px] text-slate-400 block px-1">${m.created_at}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 60;
+        box.innerHTML = html;
+        if (isScrolledToBottom || box.children.length <= 4) {
+            box.scrollTop = box.scrollHeight;
+        }
     }
 
     function sendChatMessage() {
         const input = document.getElementById('chatInputText');
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || !activeChatUserId) return;
 
-        const box = document.getElementById('chatMessagesBox');
-        
-        // Append sent message
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'flex items-start justify-end gap-2.5';
-        msgDiv.innerHTML = `
-            <div class="bg-gradient-to-r from-pink-600 to-rose-500 text-white p-3 rounded-2xl rounded-tr-xs shadow-xs max-w-[80%] text-xs font-medium">
-                ${text}
-            </div>
-            <div class="w-7 h-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                Tôi
-            </div>
-        `;
-        box.appendChild(msgDiv);
-        input.value = '';
-        box.scrollTop = box.scrollHeight;
+        const csrfToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
-        // Auto simulated reply in 1s
-        setTimeout(() => {
-            const replyDiv = document.createElement('div');
-            replyDiv.className = 'flex items-start gap-2.5';
-            replyDiv.innerHTML = `
-                <div class="w-7 h-7 rounded-full bg-pink-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                    S
-                </div>
-                <div class="bg-white p-3 rounded-2xl rounded-tl-xs border border-slate-200 shadow-xs max-w-[80%] text-xs text-slate-700">
-                    Cảm ơn bạn! Đã nhận được tin nhắn: "<em>${text}</em>".
-                </div>
-            `;
-            box.appendChild(replyDiv);
-            box.scrollTop = box.scrollHeight;
-        }, 800);
+        fetch('/accounts/api/messages/send/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                recipient_id: activeChatUserId,
+                content: text
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                input.value = '';
+                fetchDirectMessages();
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi gửi tin nhắn.');
+            }
+        })
+        .catch(err => console.error("Error sending message:", err));
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>
 {% endblock %}
+

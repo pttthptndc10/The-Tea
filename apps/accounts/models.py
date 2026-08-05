@@ -103,3 +103,22 @@ class OTPCode(models.Model):
 
     def __str__(self):
         return f"OTP {self.code} cho {self.email} ({self.purpose})"
+
+
+class DirectMessage(models.Model):
+    """
+    Real-time Direct Messages between System Users
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_direct_messages', verbose_name="Người gửi")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_direct_messages', verbose_name="Người nhận")
+    content = models.TextField(verbose_name="Nội dung tin nhắn")
+    is_read = models.BooleanField(default=False, verbose_name="Đã đọc")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.sender.display_name} -> {self.recipient.display_name}: {self.content[:30]}"
+
