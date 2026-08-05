@@ -18,7 +18,9 @@ def login_view(request):
     """
     User Login View with status lock check and Remember Me.
     """
-    if request.user.is_authenticated:
+    if request.GET.get('force_logout') == '1':
+        logout(request)
+    elif request.user.is_authenticated:
         return redirect('dashboard:index')
 
     if request.method == 'POST':

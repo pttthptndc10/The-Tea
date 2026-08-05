@@ -58,7 +58,7 @@
             var isJustLoggedIn = {% if just_logged_in %}true{% else %}false{% endif %};
 
             if (!isReload && !isInternalNav && !isJustLoggedIn) {
-                window.location.replace("{% url 'accounts:logout' %}");
+                window.location.replace("{% url 'accounts:login' %}?force_logout=1");
                 return;
             }
 
