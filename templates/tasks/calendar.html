@@ -194,6 +194,14 @@
     </div>
 </div>
 
+<!-- 2D Interactive Floating Cell Expansion Overlay (Phình ra 2 chiều lấn sang các cột và hàng xung quanh) -->
+<div id="floating2DProjectOverlay" 
+     class="hidden fixed z-50 bg-white rounded-3xl border-2 border-pink-500 shadow-2xl p-5 space-y-3.5 transition-all duration-300 ease-out transform scale-95 opacity-0 text-left max-w-lg" 
+     style="width: 420px; max-height: 480px; overflow-y: auto;"
+     onclick="event.stopPropagation()">
+    <div id="floating2DProjectOverlayBody"></div>
+</div>
+
 <script>
     // Parsed JSON Data from Backend
     const TASKS_DATA = JSON.parse('{{ tasks_json|escapejs }}');
@@ -472,9 +480,9 @@
             ${dateSpanText}
 
             <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[10px]">
-                <button type="button" onclick="toggleInlineProjectExpand('${task.project_id}', '${task.id}', event)" class="font-extrabold text-pink-700 hover:bg-pink-100/80 bg-white/90 px-2 py-0.5 rounded-lg border border-pink-300 truncate max-w-[110px] shadow-2xs transition flex items-center gap-1" title="Bấm để mở rộng phình ra thông tin Dự án tại chỗ">
+                <button type="button" onclick="toggleInlineProjectExpand('${task.project_id}', '${task.id}', event)" class="font-extrabold text-pink-700 hover:bg-pink-100/80 bg-white/90 px-2 py-0.5 rounded-lg border border-pink-300 truncate max-w-[110px] shadow-2xs transition flex items-center gap-1" title="Bấm để mở rộng phình ra 2 chiều lấn sang các ô xung quanh">
                     <span>📁 ${escapeHtml(task.project_name)}</span>
-                    <i class="fa-solid fa-chevron-down text-[8px]"></i>
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-[8px]"></i>
                 </button>
 
                 <div class="flex -space-x-1 shrink-0">
@@ -485,96 +493,202 @@
                     `).join('')}
                 </div>
             </div>
-
-            <!-- Inline Swelling/Expanding Project Accordion (Phình ra ngay tại vị trí ô lịch) -->
-            <div id="inline-proj-${task.id}" class="inline-project-accordion hidden mt-2 p-3 bg-white border-2 border-pink-500 rounded-2xl shadow-2xl space-y-2 text-left cursor-default relative z-30 transition-all duration-300 transform scale-100" onclick="event.stopPropagation()">
-                <div id="inline-proj-body-${task.id}"></div>
-            </div>
         `;
 
         return div;
     }
 
+    let currentExpandedTaskId = null;
+
     function toggleInlineProjectExpand(projectId, taskId, event) {
         if (event) event.stopPropagation();
-        const accordion = document.getElementById(`inline-proj-${taskId}`);
-        if (!accordion) return;
 
-        const isHidden = accordion.classList.contains('hidden');
+        const overlay = document.getElementById('floating2DProjectOverlay');
+        const overlayBody = document.getElementById('floating2DProjectOverlayBody');
+        if (!overlay || !overlayBody) return;
 
-        // Close any other open inline accordions first for clean UI
-        document.querySelectorAll('.inline-project-accordion').forEach(el => {
-            if (el.id !== `inline-proj-${taskId}`) {
-                el.classList.add('hidden');
-            }
-        });
-
-        if (isHidden) {
-            accordion.classList.remove('hidden');
-            const project = PROJECTS_DATA.find(p => p.id === projectId);
-            if (project) {
-                const contentBox = document.getElementById(`inline-proj-body-${taskId}`);
-                
-                let membersHtml = project.members.map(m => `
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50 border border-pink-200 text-[10px] font-bold text-pink-800">
-                        <span class="w-3.5 h-3.5 rounded-full bg-pink-600 text-white text-[8px] flex items-center justify-center">${m.initial}</span>
-                        ${escapeHtml(m.name)}
-                    </span>
-                `).join('');
-
-                let tasksHtml = project.tasks.map(t => {
-                    let st = '<span class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Chưa làm</span>';
-                    if (t.status === 'IN_PROGRESS') st = '<span class="text-[9px] font-bold text-pink-700 bg-pink-100 px-1.5 py-0.5 rounded">Đang làm</span>';
-                    else if (t.status === 'COMPLETED') st = '<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Hoàn thành</span>';
-                    
-                    return `
-                        <a href="/projects/${project.id}/#task_card_${t.id}" class="flex items-center justify-between p-1.5 bg-slate-50 hover:bg-pink-50 rounded-lg text-[10px] border border-slate-200/60 transition group">
-                            <span class="font-bold text-slate-800 group-hover:text-pink-600 truncate max-w-[65%]">${escapeHtml(t.title)}</span>
-                            ${st}
-                        </a>
-                    `;
-                }).join('');
-
-                contentBox.innerHTML = `
-                    <div class="space-y-2.5 text-xs">
-                        <div class="flex items-center justify-between border-b border-pink-100 pb-1.5">
-                            <span class="font-extrabold text-slate-900 text-xs flex items-center gap-1 text-pink-700">
-                                📁 ${escapeHtml(project.name)}
-                            </span>
-                            <span class="px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 text-[10px] font-extrabold">${project.status_display}</span>
-                        </div>
-
-                        <div class="text-[10px] text-slate-600 space-y-0.5 bg-slate-50 p-2 rounded-xl border border-slate-200/60">
-                            <p><strong>Quản lý:</strong> ${escapeHtml(project.manager_name)}</p>
-                            <p><strong>Thời gian:</strong> ${project.start_date || 'N/A'} ➔ ${project.end_date || 'N/A'}</p>
-                        </div>
-
-                        <div class="space-y-1">
-                            <span class="text-[10px] font-extrabold text-pink-700 block uppercase tracking-wider">Thành viên phân công (${project.members.length}):</span>
-                            <div class="flex flex-wrap gap-1">${membersHtml || '<span class="text-slate-400 italic text-[10px]">Chưa gán thành viên</span>'}</div>
-                        </div>
-
-                        <div class="space-y-1 pt-1 border-t border-slate-100">
-                            <span class="text-[10px] font-extrabold text-pink-700 block uppercase tracking-wider">Các Task trong dự án (${project.tasks.length}):</span>
-                            <div class="max-h-36 overflow-y-auto space-y-1 pr-0.5">${tasksHtml || '<span class="text-slate-400 italic text-[10px]">Chưa có nhiệm vụ nào</span>'}</div>
-                        </div>
-
-                        <div class="pt-2 flex items-center justify-between border-t border-pink-100">
-                            <button type="button" onclick="toggleInlineProjectExpand('${projectId}', '${taskId}', event)" class="px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
-                                ▲ Thu gọn
-                            </button>
-                            <a href="/projects/${project.id}/" class="px-3 py-1 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-extrabold text-[10px] rounded-lg shadow-xs hover:shadow-sm transition flex items-center gap-1">
-                                <span>Trang Dự Án</span>
-                                <i class="fa-solid fa-arrow-right text-[9px]"></i>
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-        } else {
-            accordion.classList.add('hidden');
+        // Single active expansion rule: if clicking the open task, close it smoothly
+        if (currentExpandedTaskId === taskId && !overlay.classList.contains('hidden')) {
+            closeFloatingProjectOverlay();
+            return;
         }
+
+        const project = PROJECTS_DATA.find(p => p.id === projectId);
+        if (!project) return;
+
+        const targetBtn = event.currentTarget || event.target;
+        const cell = targetBtn.closest('.min-h-\\[120px\\], .min-h-\\[500px\\]') || targetBtn.parentElement;
+        const cellRect = cell ? cell.getBoundingClientRect() : targetBtn.getBoundingClientRect();
+        const gridRect = document.getElementById('calendarGrid').getBoundingClientRect();
+
+        // Column Index (0 to 6)
+        const colWidth = gridRect.width / 7;
+        const relativeLeft = cellRect.left - gridRect.left;
+        const colIdx = Math.max(0, Math.min(6, Math.floor((relativeLeft + colWidth / 2) / colWidth)));
+
+        // Overlay width
+        const overlayWidth = Math.min(430, window.innerWidth - 32);
+
+        // 2D Horizontal Position Logic (Chiều ngang)
+        let computedLeft = 0;
+        if (colIdx <= 1) {
+            // Far Left (Thứ 2, 3) -> Expands rightward lấn sang các cột bên phải
+            computedTest = cellRect.left;
+        } else if (colIdx >= 5) {
+            // Far Right (Thứ 7, CN) -> Expands leftward lấn sang các cột bên trái
+            computedTest = cellRect.right - overlayWidth;
+        } else {
+            // Middle (Thứ 4, 5, 6) -> Expands symmetrically centered over cell
+            computedTest = cellRect.left + (cellRect.width / 2) - (overlayWidth / 2);
+        }
+
+        // Clamp inside screen bounds
+        computedTest = Math.max(16, Math.min(window.innerWidth - overlayWidth - 16, computedTest));
+
+        // 2D Vertical Position Logic (Chiều dọc)
+        let computedTop = cellRect.top;
+        const overlayHeight = 440; // Estimated height
+        if (cellRect.bottom + overlayHeight > window.innerHeight && cellRect.top - overlayHeight > 20) {
+            // Near bottom -> Expands upward lấn lên các hàng phía trên
+            computedTop = Math.max(20, cellRect.bottom - overlayHeight);
+        } else {
+            computedTop = Math.max(20, Math.min(window.innerHeight - overlayHeight - 20, cellRect.top));
+        }
+
+        // Build expanded project HTML content
+        let membersHtml = project.members.map(m => `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-pink-50 border border-pink-200 text-xs font-bold text-pink-900 shadow-2xs">
+                <span class="w-4 h-4 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white text-[9px] font-extrabold flex items-center justify-center">${m.initial}</span>
+                <span>${escapeHtml(m.name)}</span>
+                <span class="text-[9px] text-pink-600 font-semibold">(${m.role})</span>
+            </span>
+        `).join('');
+
+        let tasksHtml = project.tasks.map(t => {
+            let st = '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">Chưa làm</span>';
+            if (t.status === 'IN_PROGRESS') st = '<span class="text-[10px] font-bold text-pink-700 bg-pink-100 border border-pink-200 px-2 py-0.5 rounded-full">Đang làm</span>';
+            else if (t.status === 'COMPLETED') st = '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">Hoàn thành</span>';
+            
+            return `
+                <a href="/projects/${project.id}/#task_card_${t.id}" class="flex items-center justify-between p-2 bg-slate-50 hover:bg-pink-50 rounded-xl text-xs border border-slate-200/70 transition group shadow-2xs">
+                    <div class="truncate max-w-[65%] space-y-0.5">
+                        <span class="font-bold text-slate-900 group-hover:text-pink-600 transition truncate block">${escapeHtml(t.title)}</span>
+                        <span class="text-[10px] text-slate-400 font-mono block">${t.start_date || 'N/A'} ➔ ${t.end_date || 'N/A'}</span>
+                    </div>
+                    ${st}
+                </a>
+            `;
+        }).join('');
+
+        overlayBody.innerHTML = `
+            <div class="space-y-3">
+                <!-- Header -->
+                <div class="flex items-start justify-between border-b border-pink-100 pb-2.5">
+                    <div class="space-y-0.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-pink-600 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">Dự Án Phân Công</span>
+                        <h3 class="font-black text-base text-slate-900 leading-tight">📁 ${escapeHtml(project.name)}</h3>
+                    </div>
+                    <button type="button" onclick="closeFloatingProjectOverlay()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-pink-100 text-slate-500 hover:text-pink-700 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Meta Details -->
+                <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Quản lý</span>
+                        <span class="font-bold text-slate-900">${escapeHtml(project.manager_name)}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Trạng thái</span>
+                        <span class="font-bold text-pink-600">${project.status_display}</span>
+                    </div>
+                    <div class="col-span-2 border-t border-slate-200/60 pt-1.5 mt-0.5">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Thời gian</span>
+                        <span class="font-semibold text-slate-700">${project.start_date || 'N/A'} ➔ ${project.end_date || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <!-- Members Section (Kể cả Admin nếu được phân công) -->
+                <div class="space-y-1.5">
+                    <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-pink-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-users text-xs"></i>
+                        <span>Thành Viên Phân Công (${project.members.length})</span>
+                    </h4>
+                    <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+                        ${membersHtml || '<span class="text-slate-400 italic text-xs">Chưa gán thành viên</span>'}
+                    </div>
+                </div>
+
+                <!-- Tasks List -->
+                <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                    <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-pink-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-xs"></i>
+                        <span>Danh Sách Công Việc (${project.tasks.length})</span>
+                    </h4>
+                    <div class="max-h-36 overflow-y-auto space-y-1.5 pr-0.5">
+                        ${tasksHtml || '<div class="p-3 text-center text-slate-400 italic text-xs">Chưa có nhiệm vụ nào.</div>'}
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="pt-2 flex items-center justify-between border-t border-pink-100">
+                    <button type="button" onclick="closeFloatingProjectOverlay()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-chevron-up text-[10px]"></i>
+                        <span>Thu Gọn</span>
+                    </button>
+
+                    <a href="/projects/${project.id}/" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white text-xs font-extrabold shadow-md transition flex items-center gap-1.5">
+                        <span>Đến Trang Dự Án</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        `;
+
+        // Apply 2D floating coordinates and display smooth animation
+        overlay.style.left = `${computedTest}px`;
+        overlay.style.top = `${computedTop}px`;
+        overlay.style.width = `${overlayWidth}px`;
+        overlay.classList.remove('hidden');
+
+        // Trigger smooth entrance animation after 10ms frame
+        setTimeout(() => {
+            overlay.classList.remove('scale-95', 'opacity-0');
+            overlay.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        currentExpandedTaskId = taskId;
     }
+
+    function closeFloatingProjectOverlay() {
+        const overlay = document.getElementById('floating2DProjectOverlay');
+        if (!overlay || overlay.classList.contains('hidden')) return;
+
+        overlay.classList.remove('scale-100', 'opacity-100');
+        overlay.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            currentExpandedTaskId = null;
+        }, 250);
+    }
+
+    // Close floating overlay on clicking outside or pressing Escape key
+    document.addEventListener('click', function(e) {
+        const overlay = document.getElementById('floating2DProjectOverlay');
+        if (overlay && !overlay.classList.contains('hidden')) {
+            if (!overlay.contains(e.target) && !e.target.closest('[onclick*="toggleInlineProjectExpand"]')) {
+                closeFloatingProjectOverlay();
+            }
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeFloatingProjectOverlay();
+        }
+    });
 
     // Modal Handlers for Project Overview (Xem chi tiết phân công công việc & trạng thái trong Project)
     function openProjectOverviewModal(projectId, event) {
