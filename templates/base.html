@@ -83,6 +83,12 @@
                         <span>Dự án</span>
                     </a>
 
+                    <a href="{% url 'tasks:calendar' %}" 
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.url_name == 'calendar' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
+                        <i class="fa-solid fa-calendar-days w-5 text-center {% if request.resolver_match.url_name == 'calendar' %}text-white{% else %}text-pink-600{% endif %}"></i>
+                        <span>Lịch phân công</span>
+                    </a>
+
                     <a href="{% url 'accounts:members_overview' %}" 
                        class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-200 ease-out {% if request.resolver_match.url_name == 'members_overview' %}bg-gradient-to-r from-pink-600 via-rose-600 to-pink-500 text-white font-bold shadow-lg shadow-pink-500/25 translate-x-1{% else %}text-slate-600 hover:bg-pink-50/80 hover:text-pink-700 hover:translate-x-1.5{% endif %}">
                         <i class="fa-solid fa-users w-5 text-center {% if request.resolver_match.url_name == 'members_overview' %}text-white{% else %}text-pink-600{% endif %}"></i>

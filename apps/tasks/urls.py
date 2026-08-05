@@ -5,6 +5,7 @@ app_name = 'tasks'
 
 urlpatterns = [
     path('', views.task_list_view, name='list'),
+    path('calendar/', views.task_calendar_view, name='calendar'),
     path('create/', views.task_create_view, name='create'),
     path('<uuid:task_id>/', views.task_detail_view, name='detail'),
     path('<uuid:task_id>/edit/', views.task_edit_view, name='edit'),

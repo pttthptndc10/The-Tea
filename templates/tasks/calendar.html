@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block page_title %}Lịch Phân Công Công Việc{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Calendar Top Control Toolbar -->
+    <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-pink-100 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <!-- Left: Month / Week View Toggle & Today Reset -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- View Mode Toggle Buttons -->
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+                <button type="button" id="viewMonthBtn" onclick="switchCalendarView('MONTH')" 
+                        class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white">
+                    <i class="fa-solid fa-calendar-days mr-1.5"></i>Theo Tháng
+                </button>
+                <button type="button" id="viewWeekBtn" onclick="switchCalendarView('WEEK')" 
+                        class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600">
+                    <i class="fa-solid fa-calendar-week mr-1.5"></i>Theo Tuần
+                </button>
+            </div>
+
+            <!-- Navigation Controls (< , Today , >) -->
+            <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-xl">
+                <button type="button" onclick="navigateCalendar(-1)" class="w-8 h-8 rounded-lg hover:bg-white text-slate-700 hover:text-pink-600 flex items-center justify-center transition" title="Kỳ trước">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <button type="button" onclick="resetToToday()" class="px-3 py-1.5 rounded-lg hover:bg-white text-xs font-bold text-slate-700 hover:text-pink-600 transition" title="Quay lại hôm nay theo thời gian thực">
+                    Hôm nay
+                </button>
+                <button type="button" onclick="navigateCalendar(1)" class="w-8 h-8 rounded-lg hover:bg-white text-slate-700 hover:text-pink-600 flex items-center justify-center transition" title="Kỳ sau">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Custom Date Jump Picker -->
+            <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+                <i class="fa-regular fa-calendar text-pink-600"></i>
+                <span class="text-slate-500 font-medium hidden sm:inline">Chọn ngày:</span>
+                <input type="date" id="calendarJumpDate" onchange="jumpToSelectedDate(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
+            </div>
+        </div>
+
+        <!-- Center: Current Period Title Display -->
+        <div class="text-center md:text-left">
+            <h2 id="calendarPeriodTitle" class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Tháng 8, 2026</span>
+                <span class="text-[11px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-2.5 py-0.5 rounded-full">Thời Gian Thực</span>
+            </h2>
+        </div>
+
+        <!-- Right: Hidden Future Projects Flashing Badge (Cho Member khi có dự án bị che khuất) -->
+        <div id="hiddenProjectsBadgeWrapper" class="relative">
+            <button type="button" onclick="toggleHiddenProjectsDrawer()" 
+                    id="hiddenProjectsBtn"
+                    class="hidden px-3.5 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-pink-200 transition hover:scale-105">
+                <i class="fa-solid fa-bell text-white animate-bounce"></i>
+                <span id="hiddenProjectsCountText">Dự án/Công việc bị che khuất (0)</span>
+            </button>
+
+            <!-- Hidden Projects Dropdown / Popover -->
+            <div id="hiddenProjectsDrawer" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-pink-200 p-4 z-50 space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-1.5 text-pink-600">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <span>Dự Án / Nhiệm Vụ Bị Che Khuất</span>
+                    </h4>
+                    <button type="button" onclick="toggleHiddenProjectsDrawer()" class="text-slate-400 hover:text-slate-600 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-500">Các phân công nằm ngoài vùng thời gian hiện tại của lịch. Bấm vào item để lịch tự nhảy tới ngày đó:</p>
+                
+                <div id="hiddenProjectsList" class="max-h-72 overflow-y-auto space-y-2 text-xs">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Large Calendar Grid Container ("bụ và chiếm phần lớn diện tích") -->
+    <div class="bg-white rounded-3xl border border-pink-100 shadow-xl overflow-hidden flex flex-col min-h-[700px]">
+        
+        <!-- Days of Week Header (Thứ 2 -> Chủ Nhật) -->
+        <div class="grid grid-cols-7 bg-slate-900 text-white text-center font-extrabold text-xs sm:text-sm py-3.5 border-b border-slate-800 divide-x divide-slate-800">
+            <div>Thứ 2</div>
+            <div>Thứ 3</div>
+            <div>Thứ 4</div>
+            <div>Thứ 5</div>
+            <div>Thứ 6</div>
+            <div class="text-pink-400">Thứ 7</div>
+            <div class="text-rose-400">Chủ Nhật</div>
+        </div>
+
+        <!-- Calendar Days Slots Grid -->
+        <div id="calendarGrid" class="grid grid-cols-7 flex-1 border-b border-slate-100 divide-x divide-y divide-slate-100 bg-slate-50/30">
+            <!-- Rendered dynamically by JS -->
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Project Details Modal Widget -->
+<div id="projectOverviewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="p-5 bg-gradient-to-r from-pink-600 to-rose-500 text-white flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">Chi tiết Dự án</span>
+                <h3 id="modalProjectTitle" class="font-extrabold text-lg mt-1">Tên Dự Án</h3>
+            </div>
+            <button type="button" onclick="closeProjectOverviewModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
+            <!-- Meta Info Grid -->
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Người quản lý</span>
+                    <span id="modalProjectManager" class="font-bold text-slate-900 text-sm">N/A</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Trạng thái</span>
+                    <span id="modalProjectStatus" class="font-bold text-pink-600 text-sm">Đang thực hiện</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Thời gian</span>
+                    <span id="modalProjectDates" class="font-semibold text-slate-700">01/08/2026 - 31/08/2026</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Tổng số công việc</span>
+                    <span id="modalProjectTaskCount" class="font-bold text-slate-900 text-sm">0 Nhiệm vụ</span>
+                </div>
+            </div>
+
+            <!-- Assigned Members Section (Hiển thị đầy đủ ai được phân công kể cả Admin) -->
+            <div class="space-y-2">
+                <h4 class="font-extrabold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-pink-600">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Thành Viên Được Phân Công Trong Dự Án</span>
+                </h4>
+                <div id="modalProjectMembersList" class="flex flex-wrap gap-2 pt-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Project Tasks List & Statuses -->
+            <div class="space-y-2 pt-2 border-t border-slate-100">
+                <h4 class="font-extrabold text-slate-800 uppercase tracking-wider text-[11px] flex items-center justify-between">
+                    <span class="text-pink-600 flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Danh Sách Công Việc & Trạng Thái</span>
+                    </span>
+                </h4>
+                <div id="modalProjectTasksList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Action -->
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[11px] text-slate-500 font-medium">Bấm bên dưới để truy cập đầy đủ trang dự án:</span>
+            <a id="modalProjectDetailLink" href="#" class="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                <span>Chuyển Đến Trang Dự Án</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Parsed JSON Data from Backend
+    const TASKS_DATA = JSON.parse('{{ tasks_json|escapejs }}');
+    const PROJECTS_DATA = JSON.parse('{{ projects_json|escapejs }}');
+    const TODAY_REALTIME_STR = '{{ today_str }}';
+    const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+
+    // Calendar State
+    let currentView = 'MONTH'; // 'MONTH' or 'WEEK'
+    let currentDate = new Date(TODAY_REALTIME_STR);
+
+    // Initialize Calendar on Load
+    document.addEventListener('DOMContentLoaded', function() {
+        renderCalendar();
+    });
+
+    function switchCalendarView(viewMode) {
+        currentView = viewMode;
+        const monthBtn = document.getElementById('viewMonthBtn');
+        const weekBtn = document.getElementById('viewWeekBtn');
+
+        if (viewMode === 'MONTH') {
+            monthBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
+            weekBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
+        } else {
+            weekBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-gradient-to-r from-pink-600 to-rose-500 text-white";
+            monthBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-pink-600";
+        }
+        renderCalendar();
+    }
+
+    function navigateCalendar(direction) {
+        if (currentView === 'MONTH') {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+        } else {
+            currentDate.setDate(currentDate.getDate() + (direction * 7));
+        }
+        renderCalendar();
+    }
+
+    function resetToToday() {
+        currentDate = new Date(TODAY_REALTIME_STR);
+        renderCalendar();
+    }
+
+    function jumpToSelectedDate(dateStr) {
+        if (!dateStr) return;
+        currentDate = new Date(dateStr);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+
+        if (currentView === 'MONTH') {
+            renderMonthView(grid);
+        } else {
+            renderWeekView(grid);
+        }
+
+        checkHiddenProjectsAndTasks();
+    }
+
+    function renderMonthView(grid) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        // Update Title Header
+        const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+        document.getElementById('calendarPeriodTitle').innerHTML = `
+            <span>${monthNames[month]}, ${year}</span>
+            <span class="text-[11px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-2.5 py-0.5 rounded-full">Chế Độ Tháng</span>
+        `;
+
+        // First day of month
+        const firstDay = new Date(year, month, 1);
+        // Get day index Monday (0) to Sunday (6)
+        let dayOfWeek = (firstDay.getDay() + 6) % 7;
+        
+        // Days in previous month
+        const prevMonthLastDate = new Date(year, month, 0).getDate();
+
+        // Total days in current month
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        // Total slots required (6 rows x 7 = 42 slots max)
+        let slotsCount = 35;
+        if (dayOfWeek + totalDays > 35) slotsCount = 42;
+
+        let dayCounter = 1;
+        let nextMonthCounter = 1;
+
+        for (let i = 0; i < slotsCount; i++) {
+            const slot = document.createElement('div');
+            slot.className = "min-h-[120px] p-2 flex flex-col justify-between transition-all bg-white hover:bg-pink-50/20";
+
+            let slotDateStr = '';
+            let isCurrentMonth = false;
+
+            if (i < dayOfWeek) {
+                // Previous month padding days
+                const prevDay = prevMonthLastDate - dayOfWeek + i + 1;
+                const prevDate = new Date(year, month - 1, prevDay);
+                slotDateStr = formatDateKey(prevDate);
+                slot.classList.add('opacity-40', 'bg-slate-50/50');
+            } else if (dayCounter <= totalDays) {
+                // Current month days
+                const cDate = new Date(year, month, dayCounter);
+                slotDateStr = formatDateKey(cDate);
+                isCurrentMonth = true;
+                dayCounter++;
+            } else {
+                // Next month padding days
+                const nDate = new Date(year, month + 1, nextMonthCounter);
+                slotDateStr = formatDateKey(nDate);
+                nextMonthCounter++;
+                slot.classList.add('opacity-40', 'bg-slate-50/50');
+            }
+
+            // Real-time Today Highlight check
+            const isToday = (slotDateStr === TODAY_REALTIME_STR);
+
+            // Date Number Badge
+            const dateHeader = document.createElement('div');
+            dateHeader.className = "flex items-center justify-between mb-1.5";
+            
+            const dayNumSpan = document.createElement('span');
+            dayNumSpan.className = isToday 
+                ? "w-7 h-7 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white font-extrabold text-xs flex items-center justify-center shadow-md shadow-pink-500/30 ring-2 ring-pink-400" 
+                : (isCurrentMonth ? "font-bold text-xs text-slate-800" : "font-semibold text-xs text-slate-400");
+            dayNumSpan.innerText = parseInt(slotDateStr.split('-')[2], 10);
+            
+            dateHeader.appendChild(dayNumSpan);
+            slot.appendChild(dateHeader);
+
+            // Tasks container for this date
+            const tasksContainer = document.createElement('div');
+            tasksContainer.className = "space-y-1.5 flex-1 overflow-y-auto max-h-[100px]";
+
+            // Find tasks spanning or scheduled on slotDateStr
+            const slotTasks = TASKS_DATA.filter(t => {
+                if (!t.start_date || !t.end_date) return false;
+                return slotDateStr >= t.start_date && slotDateStr <= t.end_date;
+            });
+
+            slotTasks.forEach(task => {
+                const taskCard = renderTaskBadge(task);
+                tasksContainer.appendChild(taskCard);
+            });
+
+            slot.appendChild(tasksContainer);
+            grid.appendChild(slot);
+        }
+    }
+
+    function renderWeekView(grid) {
+        // Calculate Monday of current week
+        const d = new Date(currentDate);
+        const dayOfWeek = (d.getDay() + 6) % 7;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - dayOfWeek);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+
+        // Update Title Header
+        document.getElementById('calendarPeriodTitle').innerHTML = `
+            <span>Tuần (${formatDateDisplay(monday)} - ${formatDateDisplay(sunday)})</span>
+            <span class="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">Chế Độ Tuần</span>
+        `;
+
+        for (let i = 0; i < 7; i++) {
+            const slotDate = new Date(monday);
+            slotDate.setDate(monday.getDate() + i);
+            const slotDateStr = formatDateKey(slotDate);
+            const isToday = (slotDateStr === TODAY_REALTIME_STR);
+
+            const slot = document.createElement('div');
+            slot.className = "min-h-[500px] p-3 flex flex-col transition-all bg-white hover:bg-pink-50/20";
+
+            // Date Header
+            const dateHeader = document.createElement('div');
+            dateHeader.className = "flex items-center justify-between pb-2 mb-2 border-b border-slate-100";
+            
+            const dayNumSpan = document.createElement('span');
+            dayNumSpan.className = isToday 
+                ? "w-8 h-8 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white font-extrabold text-sm flex items-center justify-center shadow-md ring-2 ring-pink-400" 
+                : "font-extrabold text-sm text-slate-800";
+            dayNumSpan.innerText = slotDate.getDate();
+
+            const monthSpan = document.createElement('span');
+            monthSpan.className = "text-[10px] font-bold text-slate-400 uppercase";
+            monthSpan.innerText = `Thg ${slotDate.getMonth() + 1}`;
+
+            dateHeader.appendChild(dayNumSpan);
+            dateHeader.appendChild(monthSpan);
+            slot.appendChild(dateHeader);
+
+            // Tasks container
+            const tasksContainer = document.createElement('div');
+            tasksContainer.className = "space-y-2 flex-1 overflow-y-auto";
+
+            const slotTasks = TASKS_DATA.filter(t => {
+                if (!t.start_date || !t.end_date) return false;
+                return slotDateStr >= t.start_date && slotDateStr <= t.end_date;
+            });
+
+            slotTasks.forEach(task => {
+                const taskCard = renderTaskBadge(task, true);
+                tasksContainer.appendChild(taskCard);
+            });
+
+            slot.appendChild(tasksContainer);
+            grid.appendChild(slot);
+        }
+    }
+
+    function renderTaskBadge(task, isDetailed = false) {
+        const div = document.createElement('div');
+
+        // Priority Color Badge
+        let priorityBg = 'bg-slate-100 text-slate-700 border-slate-200';
+        if (task.priority === 'URGENT') priorityBg = 'bg-rose-50 text-rose-700 border-rose-200';
+        else if (task.priority === 'HIGH') priorityBg = 'bg-amber-50 text-amber-700 border-amber-200';
+        else if (task.priority === 'MEDIUM') priorityBg = 'bg-pink-50 text-pink-700 border-pink-200';
+
+        // Status Badge Icon
+        let statusIcon = '<i class="fa-regular fa-circle text-slate-400"></i>';
+        if (task.status === 'IN_PROGRESS') statusIcon = '<i class="fa-solid fa-spinner animate-spin text-pink-600"></i>';
+        else if (task.status === 'COMPLETED') statusIcon = '<i class="fa-solid fa-circle-check text-emerald-600"></i>';
+
+        div.className = `p-2 rounded-xl border ${priorityBg} shadow-xs hover:shadow-md transition cursor-pointer group space-y-1`;
+        
+        // Task Title & Direct Jump Handler
+        div.onclick = (e) => {
+            e.stopPropagation();
+            window.location.href = `/projects/${task.project_id}/#task_card_${task.id}`;
+        };
+
+        div.innerHTML = `
+            <div class="flex items-start justify-between gap-1">
+                <span class="font-bold text-[11px] text-slate-900 group-hover:text-pink-600 transition line-clamp-2 leading-tight">
+                    ${statusIcon} ${escapeHtml(task.title)}
+                </span>
+            </div>
+            
+            <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[10px]">
+                <button type="button" onclick="openProjectOverviewModal('${task.project_id}', event)" class="font-extrabold text-pink-700 hover:underline bg-white/80 px-1.5 py-0.5 rounded border border-pink-200 truncate max-w-[90px]" title="Xem chi tiết dự án">
+                    📁 ${escapeHtml(task.project_name)}
+                </button>
+
+                <div class="flex -space-x-1 shrink-0">
+                    ${task.assignees.slice(0, 2).map(a => `
+                        <div class="w-4 h-4 rounded-full bg-slate-800 text-white text-[8px] font-bold flex items-center justify-center border border-white" title="${escapeHtml(a.name)}">
+                            ${a.initial}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        return div;
+    }
+
+    // Modal Handlers for Project Overview (Xem chi tiết phân công công việc & trạng thái trong Project)
+    function openProjectOverviewModal(projectId, event) {
+        if (event) event.stopPropagation();
+        const project = PROJECTS_DATA.find(p => p.id === projectId);
+        if (!project) return;
+
+        document.getElementById('modalProjectTitle').innerText = project.name;
+        document.getElementById('modalProjectManager').innerText = project.manager_name;
+        document.getElementById('modalProjectStatus').innerText = project.status_display;
+        document.getElementById('modalProjectDates').innerText = (project.start_date && project.end_date) 
+            ? `${formatDateDisplay(new Date(project.start_date))} - ${formatDateDisplay(new Date(project.end_date))}` 
+            : 'Chưa đặt thời hạn';
+        document.getElementById('modalProjectTaskCount').innerText = `${project.tasks.length} Nhiệm vụ`;
+        document.getElementById('modalProjectDetailLink').setAttribute('href', `/projects/${project.id}/`);
+
+        // Render Assigned Members (Hiển thị đầy đủ tất cả thành viên kể cả Admin)
+        const membersBox = document.getElementById('modalProjectMembersList');
+        membersBox.innerHTML = '';
+        if (project.members.length === 0) {
+            membersBox.innerHTML = '<span class="text-slate-400 italic text-xs">Chưa gán thành viên</span>';
+        } else {
+            project.members.forEach(m => {
+                membersBox.innerHTML += `
+                    <div class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 shadow-xs">
+                        <div class="w-5 h-5 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                            ${m.initial}
+                        </div>
+                        <span>${escapeHtml(m.name)}</span>
+                        <span class="text-[9px] font-semibold text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded border border-pink-200">${m.role}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Render Project Tasks & Statuses
+        const tasksBox = document.getElementById('modalProjectTasksList');
+        tasksBox.innerHTML = '';
+        if (project.tasks.length === 0) {
+            tasksBox.innerHTML = '<div class="p-4 text-center text-slate-400 text-xs italic">Chưa có nhiệm vụ nào trong dự án này.</div>';
+        } else {
+            project.tasks.forEach(t => {
+                let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">Chưa thực hiện</span>';
+                if (t.status === 'IN_PROGRESS') statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-800">Đang thực hiện</span>';
+                else if (t.status === 'COMPLETED') statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Hoàn thành</span>';
+
+                tasksBox.innerHTML += `
+                    <a href="/projects/${project.id}/#task_card_${t.id}" class="p-3 bg-slate-50 hover:bg-pink-50/50 rounded-xl border border-slate-200 flex items-center justify-between transition group">
+                        <div class="space-y-0.5 truncate max-w-[70%]">
+                            <span class="font-bold text-slate-900 group-hover:text-pink-600 transition truncate block">${escapeHtml(t.title)}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">${t.start_date || 'N/A'} ➔ ${t.end_date || 'N/A'}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${statusBadge}
+                            <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-pink-600 text-xs"></i>
+                        </div>
+                    </a>
+                `;
+            });
+        }
+
+        document.getElementById('projectOverviewModal').classList.remove('hidden');
+    }
+
+    function closeProjectOverviewModal() {
+        document.getElementById('projectOverviewModal').classList.add('hidden');
+    }
+
+    // Hidden / Future Projects Flashing Badge Logic (Cho Member)
+    function checkHiddenProjectsAndTasks() {
+        const wrapper = document.getElementById('hiddenProjectsBtn');
+        const list = document.getElementById('hiddenProjectsList');
+        list.innerHTML = '';
+
+        // Calculate currently displayed date range
+        let minDateStr = '';
+        let maxDateStr = '';
+
+        if (currentView === 'MONTH') {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            minDateStr = formatDateKey(new Date(year, month, 1));
+            maxDateStr = formatDateKey(new Date(year, month + 1, 0));
+        } else {
+            const d = new Date(currentDate);
+            const dayOfWeek = (d.getDay() + 6) % 7;
+            const mon = new Date(d);
+            mon.setDate(d.getDate() - dayOfWeek);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
+            minDateStr = formatDateKey(mon);
+            maxDateStr = formatDateKey(sun);
+        }
+
+        // Find assigned tasks/projects outside currently displayed calendar range
+        const hiddenTasks = TASKS_DATA.filter(t => {
+            if (!t.start_date || !t.end_date) return false;
+            return (t.end_date < minDateStr || t.start_date > maxDateStr);
+        });
+
+        if (hiddenTasks.length > 0) {
+            wrapper.classList.remove('hidden');
+            document.getElementById('hiddenProjectsCountText').innerText = `Dự án/Công việc bị che khuất (${hiddenTasks.length})`;
+
+            hiddenTasks.forEach(t => {
+                list.innerHTML += `
+                    <div onclick="jumpToTaskDate('${t.start_date}')" class="p-2.5 rounded-xl bg-slate-50 hover:bg-pink-50 border border-slate-200 transition cursor-pointer flex items-center justify-between group">
+                        <div class="truncate max-w-[75%]">
+                            <span class="font-bold text-slate-900 group-hover:text-pink-600 transition block truncate">${escapeHtml(t.title)}</span>
+                            <span class="text-[10px] text-pink-700 font-semibold truncate block">📁 ${escapeHtml(t.project_name)}</span>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 block">${t.start_date}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            wrapper.classList.add('hidden');
+        }
+    }
+
+    function toggleHiddenProjectsDrawer() {
+        const drawer = document.getElementById('hiddenProjectsDrawer');
+        drawer.classList.toggle('hidden');
+    }
+
+    function jumpToTaskDate(dateStr) {
+        if (!dateStr) return;
+        currentDate = new Date(dateStr);
+        toggleHiddenProjectsDrawer();
+        renderCalendar();
+    }
+
+    // Helper Utility Functions
+    function formatDateKey(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function formatDateDisplay(dateObj) {
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        return `${d}/${m}`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+</script>
+{% endblock %}

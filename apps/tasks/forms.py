@@ -54,6 +54,11 @@ class TaskForm(forms.ModelForm):
         project = kwargs.pop('project', None)
         super().__init__(*args, **kwargs)
 
+        self.fields['start_date'].required = True
+        self.fields['start_date'].error_messages = {'required': '⚠️ Bắt buộc phải chọn Ngày bắt đầu để tạo phân công lịch!'}
+        self.fields['end_date'].required = True
+        self.fields['end_date'].error_messages = {'required': '⚠️ Bắt buộc phải chọn Ngày kết thúc để tạo phân công lịch!'}
+
         if project:
             self.fields['project'].initial = project
             # Filter assignees to users in the project
@@ -69,7 +74,12 @@ class TaskForm(forms.ModelForm):
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
 
+        if not start_date:
+            self.add_error('start_date', '⚠️ Bắt buộc phải chọn Ngày bắt đầu rõ ràng cho nhiệm vụ!')
+        if not end_date:
+            self.add_error('end_date', '⚠️ Bắt buộc phải chọn Ngày kết thúc rõ ràng cho nhiệm vụ!')
+
         if start_date and end_date and end_date < start_date:
-            self.add_error('end_date', 'Ngày kết thúc không thể trước ngày bắt đầu.')
+            self.add_error('end_date', '⚠️ Ngày kết thúc không thể trước ngày bắt đầu.')
 
         return cleaned_data

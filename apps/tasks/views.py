@@ -407,5 +407,89 @@ def task_auto_save_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
+@login_required
+def task_calendar_view(request):
+    """
+    Large Calendar View: Displays task assignments across dates.
+    - Admin: Views all tasks & projects in system.
+    - Member: Views only assigned tasks & projects they belong to.
+    """
+    user = request.user
+    is_admin = user.is_admin()
+
+    if is_admin:
+        tasks_qs = Task.objects.all().select_related('project', 'created_by').prefetch_related('assignees__user')
+        projects_qs = Project.objects.all().prefetch_related('memberships__user', 'tasks')
+    else:
+        member_project_ids = list(user.project_memberships.values_list('project_id', flat=True))
+        member_managed_project_ids = list(user.managed_projects.values_list('id', flat=True))
+        all_member_proj_ids = set(member_project_ids + member_managed_project_ids)
+
+        tasks_qs = Task.objects.filter(
+            Q(assignees__user=user) | Q(project_id__in=all_member_proj_ids)
+        ).distinct().select_related('project', 'created_by').prefetch_related('assignees__user')
+
+        projects_qs = Project.objects.filter(id__in=all_member_proj_ids).prefetch_related('memberships__user', 'tasks')
+
+    # Serialize Tasks to JSON for Calendar JS
+    tasks_list = []
+    for t in tasks_qs:
+        tasks_list.append({
+            'id': str(t.id),
+            'title': t.title,
+            'project_id': str(t.project.id),
+            'project_name': t.project.name,
+            'start_date': t.start_date.strftime('%Y-%m-%d') if t.start_date else None,
+            'end_date': t.end_date.strftime('%Y-%m-%d') if t.end_date else None,
+            'status': t.status,
+            'status_display': t.get_status_display(),
+            'priority': t.priority,
+            'priority_display': t.get_priority_display(),
+            'assignees': [
+                {
+                    'id': str(a.user.id),
+                    'name': a.user.display_name,
+                    'initial': a.user.initial_letter,
+                    'role': a.user.get_role_display()
+                } for a in t.assignees.all()
+            ]
+        })
+
+    # Serialize Projects to JSON for Modal & Hidden Projects Drawer
+    projects_list = []
+    for p in projects_qs:
+        proj_tasks = [t for t in tasks_list if t['project_id'] == str(p.id)]
+        projects_list.append({
+            'id': str(p.id),
+            'name': p.name,
+            'status': p.status,
+            'status_display': p.get_status_display(),
+            'manager_name': p.manager.display_name if p.manager else 'Chưa gán',
+            'start_date': p.start_date.strftime('%Y-%m-%d') if p.start_date else None,
+            'end_date': p.end_date.strftime('%Y-%m-%d') if p.end_date else None,
+            'members': [
+                {
+                    'id': str(m.user.id),
+                    'name': m.user.display_name,
+                    'initial': m.user.initial_letter,
+                    'role': m.user.get_role_display()
+                } for m in p.memberships.all()
+            ],
+            'tasks': proj_tasks
+        })
+
+    today = timezone.now().date()
+
+    context = {
+        'tasks_json': json.dumps(tasks_list),
+        'projects_json': json.dumps(projects_list),
+        'today_str': today.strftime('%Y-%m-%d'),
+        'is_admin': is_admin
+    }
+
+    return render(request, 'tasks/calendar.html', context)
+
+
+
 
 

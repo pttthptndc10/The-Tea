@@ -1429,5 +1429,27 @@
     }
 
     attachAutoSaveListeners(document);
+
+    // Smooth Hash Target Task Card Scroll & Pulse Highlight Animation
+    window.addEventListener('DOMContentLoaded', function() {
+        const hash = window.location.hash;
+        if (hash) {
+            let targetId = hash.replace('#', '');
+            if (!targetId.startsWith('task_card_')) {
+                targetId = 'task_card_' + targetId.replace('task-', '');
+            }
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+                setTimeout(() => {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.add('ring-4', 'ring-pink-500', 'shadow-2xl', 'scale-[1.02]', 'transition-all', 'duration-500');
+                    setTimeout(() => {
+                        targetEl.classList.remove('ring-4', 'ring-pink-500', 'shadow-2xl', 'scale-[1.02]');
+                    }, 3500);
+                }, 300);
+            }
+        }
+    });
 </script>
 {% endblock %}
+
