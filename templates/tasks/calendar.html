@@ -410,7 +410,7 @@
         if (task.status === 'IN_PROGRESS') statusIcon = '<i class="fa-solid fa-spinner animate-spin text-pink-600"></i>';
         else if (task.status === 'COMPLETED') statusIcon = '<i class="fa-solid fa-circle-check text-emerald-600"></i>';
 
-        div.className = `p-2 rounded-xl border ${priorityBg} shadow-xs hover:shadow-md transition cursor-pointer group space-y-1`;
+        div.className = `p-2 rounded-xl border ${priorityBg} shadow-xs hover:shadow-md transition cursor-pointer group space-y-1 relative`;
         
         // Task Title & Direct Jump Handler
         div.onclick = (e) => {
@@ -426,8 +426,9 @@
             </div>
             
             <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[10px]">
-                <button type="button" onclick="openProjectOverviewModal('${task.project_id}', event)" class="font-extrabold text-pink-700 hover:underline bg-white/80 px-1.5 py-0.5 rounded border border-pink-200 truncate max-w-[90px]" title="Xem chi tiết dự án">
-                    📁 ${escapeHtml(task.project_name)}
+                <button type="button" onclick="toggleInlineProjectExpand('${task.project_id}', '${task.id}', event)" class="font-extrabold text-pink-700 hover:bg-pink-100/80 bg-white/90 px-2 py-0.5 rounded-lg border border-pink-300 truncate max-w-[110px] shadow-2xs transition flex items-center gap-1" title="Bấm để mở rộng phình ra thông tin Dự án tại chỗ">
+                    <span>📁 ${escapeHtml(task.project_name)}</span>
+                    <i class="fa-solid fa-chevron-down text-[8px]"></i>
                 </button>
 
                 <div class="flex -space-x-1 shrink-0">
@@ -438,9 +439,95 @@
                     `).join('')}
                 </div>
             </div>
+
+            <!-- Inline Swelling/Expanding Project Accordion (Phình ra ngay tại vị trí ô lịch) -->
+            <div id="inline-proj-${task.id}" class="inline-project-accordion hidden mt-2 p-3 bg-white border-2 border-pink-500 rounded-2xl shadow-2xl space-y-2 text-left cursor-default relative z-30 transition-all duration-300 transform scale-100" onclick="event.stopPropagation()">
+                <div id="inline-proj-body-${task.id}"></div>
+            </div>
         `;
 
         return div;
+    }
+
+    function toggleInlineProjectExpand(projectId, taskId, event) {
+        if (event) event.stopPropagation();
+        const accordion = document.getElementById(`inline-proj-${taskId}`);
+        if (!accordion) return;
+
+        const isHidden = accordion.classList.contains('hidden');
+
+        // Close any other open inline accordions first for clean UI
+        document.querySelectorAll('.inline-project-accordion').forEach(el => {
+            if (el.id !== `inline-proj-${taskId}`) {
+                el.classList.add('hidden');
+            }
+        });
+
+        if (isHidden) {
+            accordion.classList.remove('hidden');
+            const project = PROJECTS_DATA.find(p => p.id === projectId);
+            if (project) {
+                const contentBox = document.getElementById(`inline-proj-body-${taskId}`);
+                
+                let membersHtml = project.members.map(m => `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50 border border-pink-200 text-[10px] font-bold text-pink-800">
+                        <span class="w-3.5 h-3.5 rounded-full bg-pink-600 text-white text-[8px] flex items-center justify-center">${m.initial}</span>
+                        ${escapeHtml(m.name)}
+                    </span>
+                `).join('');
+
+                let tasksHtml = project.tasks.map(t => {
+                    let st = '<span class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Chưa làm</span>';
+                    if (t.status === 'IN_PROGRESS') st = '<span class="text-[9px] font-bold text-pink-700 bg-pink-100 px-1.5 py-0.5 rounded">Đang làm</span>';
+                    else if (t.status === 'COMPLETED') st = '<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Hoàn thành</span>';
+                    
+                    return `
+                        <a href="/projects/${project.id}/#task_card_${t.id}" class="flex items-center justify-between p-1.5 bg-slate-50 hover:bg-pink-50 rounded-lg text-[10px] border border-slate-200/60 transition group">
+                            <span class="font-bold text-slate-800 group-hover:text-pink-600 truncate max-w-[65%]">${escapeHtml(t.title)}</span>
+                            ${st}
+                        </a>
+                    `;
+                }).join('');
+
+                contentBox.innerHTML = `
+                    <div class="space-y-2.5 text-xs">
+                        <div class="flex items-center justify-between border-b border-pink-100 pb-1.5">
+                            <span class="font-extrabold text-slate-900 text-xs flex items-center gap-1 text-pink-700">
+                                📁 ${escapeHtml(project.name)}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 text-[10px] font-extrabold">${project.status_display}</span>
+                        </div>
+
+                        <div class="text-[10px] text-slate-600 space-y-0.5 bg-slate-50 p-2 rounded-xl border border-slate-200/60">
+                            <p><strong>Quản lý:</strong> ${escapeHtml(project.manager_name)}</p>
+                            <p><strong>Thời gian:</strong> ${project.start_date || 'N/A'} ➔ ${project.end_date || 'N/A'}</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-extrabold text-pink-700 block uppercase tracking-wider">Thành viên phân công (${project.members.length}):</span>
+                            <div class="flex flex-wrap gap-1">${membersHtml || '<span class="text-slate-400 italic text-[10px]">Chưa gán thành viên</span>'}</div>
+                        </div>
+
+                        <div class="space-y-1 pt-1 border-t border-slate-100">
+                            <span class="text-[10px] font-extrabold text-pink-700 block uppercase tracking-wider">Các Task trong dự án (${project.tasks.length}):</span>
+                            <div class="max-h-36 overflow-y-auto space-y-1 pr-0.5">${tasksHtml || '<span class="text-slate-400 italic text-[10px]">Chưa có nhiệm vụ nào</span>'}</div>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between border-t border-pink-100">
+                            <button type="button" onclick="toggleInlineProjectExpand('${projectId}', '${taskId}', event)" class="px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
+                                ▲ Thu gọn
+                            </button>
+                            <a href="/projects/${project.id}/" class="px-3 py-1 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-extrabold text-[10px] rounded-lg shadow-xs hover:shadow-sm transition flex items-center gap-1">
+                                <span>Trang Dự Án</span>
+                                <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            accordion.classList.add('hidden');
+        }
     }
 
     // Modal Handlers for Project Overview (Xem chi tiết phân công công việc & trạng thái trong Project)
