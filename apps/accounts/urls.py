@@ -23,6 +23,7 @@ urlpatterns = [
     path('members/<uuid:user_id>/toggle-status/', views.toggle_user_status_view, name='toggle_user_status'),
     path('members/<uuid:user_id>/delete/', views.delete_user_view, name='delete_user'),
     path('members/<uuid:user_id>/change-role/', views.change_user_role_view, name='change_user_role'),
+    path('members/<uuid:user_id>/transfer-admin/', views.transfer_admin_view, name='transfer_admin'),
     # Direct Messaging API Routes
     path('api/messages/<uuid:target_user_id>/', views.get_direct_messages_api_view, name='get_direct_messages_api'),
     path('api/messages/send/', views.send_direct_message_api_view, name='send_direct_message_api'),
