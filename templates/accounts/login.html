@@ -20,7 +20,7 @@
     </div>
 
     <!-- Login Form -->
-    <form method="POST" action="{% url 'accounts:login' %}" class="space-y-4">
+    <form method="POST" action="{% url 'accounts:login' %}" onsubmit="sessionStorage.setItem('nav_internal', '1');" class="space-y-4">
         {% csrf_token %}
         
         <div>
@@ -73,6 +73,16 @@
 </div>
 
 <script>
+    // Clear any stale navigation flag on login page
+    sessionStorage.removeItem('nav_internal');
+
+    const loginForm = document.querySelector('form[action="{% url 'accounts:login' %}"]');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function() {
+            sessionStorage.setItem('nav_internal', '1');
+        });
+    }
+
     // 3D Card Interactive Tilt Effect following mouse position
     const card = document.getElementById('loginCardContainer');
     if (card) {

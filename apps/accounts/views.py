@@ -36,12 +36,9 @@ def login_view(request):
                     return render(request, 'accounts/login.html', {'form': form})
 
                 login(request, user)
-                if remember_me:
-                    # Remember for 2 weeks
-                    request.session.set_expiry(1209600)
-                else:
-                    # Expire on browser close
-                    request.session.set_expiry(0)
+                request.session.set_expiry(0)
+                request.session['just_logged_in'] = True
+                request.session.modified = True
 
                 messages.success(request, f"Đăng nhập thành công! Chào mừng {user.full_name or user.email}.")
                 return redirect('dashboard:index')

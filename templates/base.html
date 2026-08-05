@@ -39,6 +39,53 @@
         [x-cloak] { display: none !important; }
     </style>
     {% block extra_css %}{% endblock %}
+    {% if user.is_authenticated %}
+    <script>
+        (function() {
+            var isReload = false;
+            if (window.performance) {
+                var navEntries = performance.getEntriesByType ? performance.getEntriesByType('navigation') : [];
+                if (navEntries.length > 0) {
+                    isReload = navEntries[0].type === 'reload';
+                } else if (performance.navigation) {
+                    isReload = performance.navigation.type === 1;
+                }
+            }
+
+            var isInternalNav = sessionStorage.getItem('nav_internal') === '1';
+            sessionStorage.removeItem('nav_internal');
+
+            var isJustLoggedIn = {% if just_logged_in %}true{% else %}false{% endif %};
+
+            if (!isReload && !isInternalNav && !isJustLoggedIn) {
+                window.location.replace("{% url 'accounts:logout' %}");
+                return;
+            }
+
+            document.addEventListener('click', function(e) {
+                var a = e.target.closest('a');
+                var btn = e.target.closest('button, [type="submit"]');
+                if (a || btn) {
+                    sessionStorage.setItem('nav_internal', '1');
+                }
+            }, true);
+
+            document.addEventListener('submit', function() {
+                sessionStorage.setItem('nav_internal', '1');
+            }, true);
+
+            window.addEventListener('pageshow', function(e) {
+                if (e.persisted) {
+                    window.location.reload();
+                }
+            });
+        })();
+    </script>
+    {% else %}
+    <script>
+        sessionStorage.removeItem('nav_internal');
+    </script>
+    {% endif %}
 </head>
 <body class="h-full font-sans antialiased text-slate-800 bg-gradient-to-br from-pink-50/60 via-rose-50/30 to-slate-50 flex flex-col min-h-screen">
 

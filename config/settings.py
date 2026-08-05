@@ -45,6 +45,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.accounts.middleware.NoCacheAuthenticatedMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -63,6 +64,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.notifications.views.notification_context_processor',
+                'apps.accounts.context_processors.auth_session_context_processor',
             ],
         },
     },
@@ -100,6 +102,8 @@ if not USE_SQLITE:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 else:
     SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
